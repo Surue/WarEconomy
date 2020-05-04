@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Unit : MonoBehaviour {
+public class UnitMovement : MonoBehaviour {
 
     //Visual
     [Header("Visual")] 
@@ -17,11 +17,17 @@ public class Unit : MonoBehaviour {
     
     Vector3 targetPosition_;
     
+    //Attack
+    [Header("Attacks")]
+    [SerializeField] SpriteRenderer spriteAttackArea_;
+    [SerializeField] float attackRange_;
+    
     // Start is called before the first frame update
     void Start() {
         spriteRenderer_ = GetComponent<SpriteRenderer>();
 
         spriteRenderer_.color = spriteColor_;
+        spriteAttackArea_.color = spriteColor_;
 
         targetPosition_ = transform.position;
     }

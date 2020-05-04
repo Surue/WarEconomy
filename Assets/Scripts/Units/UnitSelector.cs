@@ -17,7 +17,7 @@ public class UnitSelector : MonoBehaviour {
     BoxCollider collider_;
     Camera camera_;
 
-    Unit unit_;
+    UnitMovement unitMovement_;
 
     // Start is called before the first frame update
     void Start() {
@@ -26,7 +26,7 @@ public class UnitSelector : MonoBehaviour {
 
         FindObjectOfType<UnitSelectorController>().Register(this);
 
-        unit_ = GetComponent<Unit>();
+        unitMovement_ = GetComponent<UnitMovement>();
     }
 
     // Update is called once per frame
@@ -60,14 +60,13 @@ public class UnitSelector : MonoBehaviour {
         RaycastHit hit;
         var ray = camera_.ScreenPointToRay(Input.mousePosition);
   
-        Vector3 targetPosition = transform.position;
-        if (Physics.Raycast(ray, out hit, 1000, ~LayerMask.NameToLayer("Ground"))) {
-            targetPosition = hit.point;
+        if (Physics.Raycast(ray, out hit, 1000, 1 << LayerMask.NameToLayer("Ground"))) {
+            Vector3 targetPosition = targetPosition = hit.point;
             
             targetPosition.y += 0.1f;
+            unitMovement_.SetTargetPosition(targetPosition);
         }
         
-        unit_.SetTargetPosition(targetPosition);
     }
 
     void OnDrawGizmos() {
