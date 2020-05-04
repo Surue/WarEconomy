@@ -20,7 +20,6 @@ public class UnitMovement : MonoBehaviour {
     //Attack
     [Header("Attacks")]
     [SerializeField] SpriteRenderer spriteAttackArea_;
-    [SerializeField] float attackRange_;
     
     // Start is called before the first frame update
     void Start() {
@@ -44,7 +43,6 @@ public class UnitMovement : MonoBehaviour {
 
     public void SetTargetPosition(Vector3 targetPosition) {
         targetPosition_ = targetPosition;
-//        Debug.Log("Target position = " + targetPosition_);
     }
 
     void OnDrawGizmos() {

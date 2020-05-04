@@ -5,28 +5,34 @@ using UnityEngine;
 
 public class UnitAttack : Destructible {
 
+    [Header("Fighting values")]
     [SerializeField] float attackRange_;
     [SerializeField] int manpower_;
 
+    [Header("Visual")]
+    SpriteRenderer spriteRenderer_;
+    
     List<Destructible> targets_;
 
-    float attackTickTime = 1;
-    float time = 0;
+    const float ATTACK_TICK_TIME = 1;
+    float time_ = 0;
     
     // Start is called before the first frame update
     void Start()
     {
         targets_ = new List<Destructible>();
+        
+        transform.localScale = new Vector3(attackRange_, attackRange_, attackRange_);
     }
 
     // Update is called once per frame
     void Update() {
-        time += Time.deltaTime;
+        time_ += Time.deltaTime;
 
-        if (time < attackTickTime) return;
+        if (time_ < ATTACK_TICK_TIME) return;
         
         //Reset time
-        time = 0;
+        time_ = 0;
         
         //Attack all targets
         List<Destructible> targetToRemove = new List<Destructible>();
@@ -43,8 +49,11 @@ public class UnitAttack : Destructible {
     
     public override bool TakeDamage(int dmg) {
         manpower_ -= dmg;
-        
-        return manpower_ <= 0;
+
+        if (manpower_ > 0) return false;
+        Destroy(transform.parent.gameObject, 0.1f);
+        return true;
+
     }
 
     void OnTriggerEnter(Collider other) {

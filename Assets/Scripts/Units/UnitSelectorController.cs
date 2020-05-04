@@ -50,6 +50,25 @@ public class UnitSelectorController : MonoBehaviour
         selectables_.Add(selector);
     }
 
+    public void Unregister(UnitSelector selector) {
+        if (indexSelected_ != NULL_SELECTED && selectables_[indexSelected_] == selector) {
+            //If the unit is currently selected, the the selection index is set to null
+            indexSelected_ = NULL_SELECTED;
+        } else {
+            //Otherwise loop through each selectable object and if the destroyed object's index is small than the selected index, then reduce it by one
+            for (int i = 0; i < selectables_.Count; i++) {
+                if (selectables_[i] != selector) continue;
+                if (indexSelected_ > i) {
+                    indexSelected_--;
+                }
+                    
+                break;
+            }
+        }
+        
+        selectables_.Remove(selector);
+    }
+
     void OnDrawGizmos() {
         if (indexSelected_ != NULL_SELECTED) {
             UnitSelector unitSelector = selectables_[indexSelected_];
