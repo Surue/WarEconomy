@@ -70,7 +70,11 @@ public class UnitSelector : MonoBehaviour {
     }
 
     void OnDestroy() {
-        FindObjectOfType<UnitSelectorController>().Unregister(this);
+        UnitSelectorController unitSelectorController = FindObjectOfType<UnitSelectorController>();
+
+        if (unitSelectorController != null) {
+            unitSelectorController.Unregister(this);
+        }
     }
 
     void OnDrawGizmos() {

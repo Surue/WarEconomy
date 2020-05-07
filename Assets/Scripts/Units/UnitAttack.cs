@@ -11,8 +11,10 @@ public class UnitAttack : Destructible {
 
     [Header("Visual")]
     SpriteRenderer spriteRenderer_;
-    
-    List<Destructible> targets_;
+    [SerializeField] ParticleSystem particleSystem_;
+
+    List<Destructible> possibleTarget_;
+    Destructible targets_;
 
     const float ATTACK_TICK_TIME = 1;
     float time_ = 0;
@@ -20,30 +22,43 @@ public class UnitAttack : Destructible {
     // Start is called before the first frame update
     void Start()
     {
-        targets_ = new List<Destructible>();
-        
         transform.localScale = new Vector3(attackRange_, attackRange_, attackRange_);
+        
+        particleSystem_.Stop();
+        
+        possibleTarget_ = new List<Destructible>();
     }
 
     // Update is called once per frame
     void Update() {
         time_ += Time.deltaTime;
+        
+        if (targets_ == null) {
+            if (possibleTarget_.Count > 0) {
+                targets_ = possibleTarget_[0];
 
+                particleSystem_.Play();
+            } else {
+                return;
+            }
+        }
+        
+        //Animation of the particle system
+        particleSystem_.transform.forward = targets_.transform.position - transform.position;
+        
         if (time_ < ATTACK_TICK_TIME) return;
         
         //Reset time
         time_ = 0;
         
         //Attack all targets
-        List<Destructible> targetToRemove = new List<Destructible>();
-        foreach (Destructible destructible in targets_) {
-            if (destructible.TakeDamage((int) (manpower_ * 0.1f))) {
-                targetToRemove.Add(destructible);
-            }
-        }
-
-        foreach (Destructible destructible in targetToRemove) {
-            targets_.Remove(destructible);
+        if (targets_.TakeDamage((int) (manpower_ * 0.1f))) {
+            particleSystem_.Stop();
+        
+            possibleTarget_.Remove(targets_);
+            targets_ = null;
+            
+            Destroy(targets_);
         }
     }
     
@@ -58,7 +73,25 @@ public class UnitAttack : Destructible {
 
     void OnTriggerEnter(Collider other) {
         if (other.gameObject.layer == LayerMask.NameToLayer("Destructible")) {
-            targets_.Add(other.GetComponent<Destructible>());
+            //TOODO Use priority to select target
+            possibleTarget_.Add(other.GetComponent<Destructible>());
+        }
+    }
+
+    void OnTriggerExit(Collider other) {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Destructible")) {
+
+            Destructible destructible = other.GetComponent<Destructible>();
+            
+            if (possibleTarget_.Contains(destructible)) {
+
+                if (targets_ == destructible) {
+                    targets_ = null;
+                    particleSystem_.Stop();
+                }
+                
+                possibleTarget_.Remove(destructible);
+            }
         }
     }
 }
