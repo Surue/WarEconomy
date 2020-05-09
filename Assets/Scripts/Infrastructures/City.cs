@@ -1,11 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class City : MonoBehaviour {
     [Header("City Infos")] 
-    [SerializeField] SO_City soCity_;
+    public SO_City soCity_;
 
     [Header("UI")] 
     [SerializeField] TextMeshProUGUI uiCityName_;
@@ -18,5 +19,9 @@ public class City : MonoBehaviour {
     void Update()
     {
         
+    }
+
+    void OnValidate() {
+        uiCityName_.text = soCity_.cityName;
     }
 }

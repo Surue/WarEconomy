@@ -64,7 +64,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Mining Town
+  m_text: City Center
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -138,7 +138,7 @@ MonoBehaviour:
     spaceCount: 1
     wordCount: 2
     linkCount: 0
-    lineCount: 2
+    lineCount: 1
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -265,6 +265,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3141303659500056672}
   - component: {fileID: 3141303659500056673}
+  - component: {fileID: 440836002}
+  - component: {fileID: 3575082927757385624}
   m_Layer: 0
   m_Name: City
   m_TagString: Untagged
@@ -337,3 +339,30 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &440836002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141303659500056674}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 104d5bedd83f02a4cad582298b88b125, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  soCity_: {fileID: 11400000, guid: 6826a5462bf63f245b6115e400621cd2, type: 2}
+  uiCityName_: {fileID: 3141303657782218893}
+--- !u!114 &3575082927757385624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141303659500056674}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64676f2fe8851b14b9433e4aa2602c78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  neighbors: []
