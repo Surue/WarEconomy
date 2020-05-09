@@ -31,17 +31,20 @@ public class UnitSelectorController : MonoBehaviour
                 if (!(mousePos.x > screenAabb.bottomLeft.x) || !(mousePos.x < screenAabb.topRight.x)) continue;
                 if (mousePos.y > screenAabb.bottomLeft.y && mousePos.y < screenAabb.topRight.y) {
                     indexSelected_ = index;
+                    unitSelector.Select();
+                    break;
                 }
             }
         }
 
         //Move the unit
-        if (Input.GetMouseButton(0) && indexSelected_ != NULL_SELECTED) {
+        if (Input.GetMouseButtonDown(0) && indexSelected_ != NULL_SELECTED) {
             selectables_[indexSelected_].SetTargetPositionFromMousePosition(Input.mousePosition);
         }
         
         //Deselect the unit
-        if (Input.GetMouseButtonUp(0) && indexSelected_ != NULL_SELECTED) {
+        if (Input.GetMouseButtonUp(1) && indexSelected_ != NULL_SELECTED) {
+            selectables_[indexSelected_].UnSelect();
             indexSelected_ = NULL_SELECTED;
         }
     }

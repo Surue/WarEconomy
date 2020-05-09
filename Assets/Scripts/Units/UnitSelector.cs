@@ -19,6 +19,7 @@ public class UnitSelector : MonoBehaviour {
 
     UnitMovement unitMovement_;
 
+    
     // Start is called before the first frame update
     void Start() {
         camera_ = Camera.main;
@@ -29,10 +30,11 @@ public class UnitSelector : MonoBehaviour {
         unitMovement_ = GetComponent<UnitMovement>();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
+    public void Select() {
         
+    }
+
+    public void UnSelect() {
     }
 
     public ScreenAABB GetScreenAABB() {
@@ -61,7 +63,7 @@ public class UnitSelector : MonoBehaviour {
         var ray = camera_.ScreenPointToRay(Input.mousePosition);
   
         if (Physics.Raycast(ray, out hit, 1000, 1 << LayerMask.NameToLayer("Ground"))) {
-            Vector3 targetPosition = targetPosition = hit.point;
+            Vector3 targetPosition = hit.point;
             
             targetPosition.y += 0.1f;
             unitMovement_.SetTargetPosition(targetPosition);
