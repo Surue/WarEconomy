@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using UnityEditor;
 using UnityEngine;
+using Vector3 = UnityEngine.Vector3;
 
 namespace AI {
 
@@ -10,6 +12,7 @@ namespace AI {
 public struct Link {
     public WayPoint wayPoint;
     public float weight;
+    public float distance;
 }
 public class WayPoint : MonoBehaviour {
 
@@ -17,14 +20,22 @@ public class WayPoint : MonoBehaviour {
     
     // Start is called before the first frame update
     void Start() {
-
+        PathFinder.Instance.RegisterWayPoint(this);
     }
 
-    // Update is called once per frame
-    void Update() {
-
+    void OnDestroy() {
+        PathFinder.Instance.UnregisterWayPoint(this);
     }
-    
+
+    void OnValidate() {
+        for (int i = 0; i < neighbors.Count; i++) {
+            Link neighbor = neighbors[i];
+            neighbor.distance = (Vector3.Distance(transform.position, neighbor.wayPoint.transform.position));
+            
+            neighbors[i] = neighbor;
+        }
+    }
+
 #if UNITY_EDITOR
     void OnDrawGizmos() {
         Gizmos.color = Color.cyan;
@@ -49,6 +60,10 @@ public class WayPoint : MonoBehaviour {
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 1f);
         
         Handles.DrawSolidDisc(transform.position, Vector3.up, 0.5f);
+
+        if (transform.hasChanged) {
+            OnValidate();
+        }
         
         if (neighbors == null) return;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 1f);
@@ -56,7 +71,7 @@ public class WayPoint : MonoBehaviour {
         
         foreach (Link neighbor in neighbors) {
             Vector3 neighborPos = neighbor.wayPoint.transform.position;
-            Handles.Label((position + neighborPos) / 2.0f, neighbor.weight.ToString());
+            Handles.Label((position + neighborPos) / 2.0f, neighbor.weight + " + " + neighbor.distance.ToString("0.00"));
             Vector3 dir = (position - neighborPos).normalized;
             
             Handles.DrawLine(position + Vector3.Cross(dir, Vector3.up) * 0.1f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.1f);
