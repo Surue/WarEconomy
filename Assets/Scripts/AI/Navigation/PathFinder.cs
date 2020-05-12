@@ -10,7 +10,7 @@ namespace AI {
 public class PathFinder : MonoBehaviour {
     static PathFinder instance_;
 
-    List<WayPoint> wayPoints_;
+    List<WayPoint> wayPoints_ = new List<WayPoint>();
 
     public static PathFinder Instance {
         get => instance_;
@@ -47,12 +47,12 @@ public class PathFinder : MonoBehaviour {
         List<WayPoint> wayPointsPath = GetPath(startWayPointIndex, endWayPointIndex);
 
         //Build path
-        List<Vector3> path = new List<Vector3> {endPosition};
+        List<Vector3> path = new List<Vector3> {startPosition};
 
         for (int i = wayPointsPath.Count - 1; i >= 0; i--) {
             path.Add(wayPointsPath[i].transform.position);
         }
-        path.Add(startPosition);
+        path.Add(endPosition);
         
         return path;
     }
@@ -60,29 +60,28 @@ public class PathFinder : MonoBehaviour {
     List<WayPoint> GetPath(int startWayPointIndex, int endWayPointIndex) {
         List<int> openList = new List<int> {startWayPointIndex};
         List<int> closedList = new List<int>();
-
-        List<float> openCost = new List<float> {0};
         
         float[] totalCost = new float[wayPoints_.Count];
-
+        totalCost[startWayPointIndex] = 1f;
+        
         Dictionary<int, int> cameFrom = new Dictionary<int, int>();
 
         Vector3 endPosition = wayPoints_[endWayPointIndex].transform.position;
-
+        
         while (openList.Count > 0) {
             //Sort by priority
             float smallestCost = Mathf.Infinity;
             int index = 0;
-            for (int i = 0; i < openCost.Count; i++) {
-                if (!(openCost[i] < smallestCost)) continue;
+            for (int i = 0; i < wayPoints_.Count; i++) {
+                if (!(totalCost[i] < smallestCost) || totalCost[i] == 0.0f || !openList.Contains(i)) continue;
                 
-                smallestCost = openCost[i];
+                smallestCost = totalCost[i];
                 index = i;
             }
             
             //Get the first one
-            WayPoint currentWayPoint = wayPoints_[openList[index]];
-            openList.RemoveAt(index);
+            WayPoint currentWayPoint = wayPoints_[index];
+            openList.Remove(index);
             
             closedList.Add(index);
             
@@ -90,15 +89,16 @@ public class PathFinder : MonoBehaviour {
             foreach (Link neighbor in currentWayPoint.neighbors) {
                 int indexNeighbor = 0;
                 for (int i = 0; i < wayPoints_.Count; i++) {
-                    if (wayPoints_[i] == neighbor.wayPoint) {
-                        indexNeighbor = i;
-                    }
+                    if (wayPoints_[i].transform.position != neighbor.wayPoint.transform.position) continue;
+                    
+                    indexNeighbor = i;
+                    break;
                 }
 
                 float newCost = totalCost[index] + (neighbor.distance * neighbor.weight) +
                                 Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition);
 
-                if (!closedList.Contains(indexNeighbor) || totalCost[indexNeighbor] > 0.0f && totalCost[indexNeighbor] < newCost) {
+                if (!closedList.Contains(indexNeighbor) && (totalCost[indexNeighbor] == 0.0f || totalCost[indexNeighbor] < newCost)) {
                     cameFrom[indexNeighbor] = index;
                     totalCost[indexNeighbor] = newCost;
 
@@ -136,7 +136,7 @@ public class PathFinder : MonoBehaviour {
             WayPoint wayPoint = wayPoints_[index];
             float distance = ManhattanDistance(wayPoint.transform.position, position);
 
-            if (!(minDistance < distance)) continue;
+            if (distance > minDistance) continue;
             minDistance = distance;
             result = index;
         }
