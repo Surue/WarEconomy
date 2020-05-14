@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Assertions.Comparers;
-using UnityEngine.Assertions.Must;
 
 namespace AI {
 public class PathFinder : MonoBehaviour {
@@ -22,6 +17,10 @@ public class PathFinder : MonoBehaviour {
         } else {
             Destroy(this);
         }
+    }
+
+    public void Reset() {
+        wayPoints_ = new List<WayPoint>();
     }
 
     public void RegisterWayPoint(WayPoint wayPoint) {
@@ -44,7 +43,10 @@ public class PathFinder : MonoBehaviour {
         int endWayPointIndex = FindClosestWayPointIndex(endPosition);
         
         //Find all path
-        List<WayPoint> wayPointsPath = GetPath(startWayPointIndex, endWayPointIndex);
+        List<WayPoint> wayPointsPath = new List<WayPoint>();
+        if (startWayPointIndex != endWayPointIndex) {
+            wayPointsPath = GetPath(startWayPointIndex, endWayPointIndex);
+        }
 
         //Build path
         List<Vector3> path = new List<Vector3> {startPosition};
@@ -62,44 +64,41 @@ public class PathFinder : MonoBehaviour {
         List<int> closedList = new List<int>();
         
         float[] totalCost = new float[wayPoints_.Count];
-        totalCost[startWayPointIndex] = 1f;
+        for (int i = 0; i < totalCost.Length; i++) {
+            totalCost[i] = Mathf.Infinity;
+        }
+        totalCost[startWayPointIndex] = 0f;
         
-        Dictionary<int, int> cameFrom = new Dictionary<int, int>();
+        int[] cameFrom = new int[wayPoints_.Count];
 
         Vector3 endPosition = wayPoints_[endWayPointIndex].transform.position;
         
         while (openList.Count > 0) {
             //Sort by priority
             float smallestCost = Mathf.Infinity;
-            int index = 0;
-            for (int i = 0; i < wayPoints_.Count; i++) {
-                if (!(totalCost[i] < smallestCost) || totalCost[i] == 0.0f || !openList.Contains(i)) continue;
+            int currentNodeIndex = 0;
+            foreach (int index in openList) {
+                if (!(totalCost[index] < smallestCost)) continue;
                 
-                smallestCost = totalCost[i];
-                index = i;
+                smallestCost = totalCost[index];
+                currentNodeIndex = index;
             }
             
             //Get the first one
-            WayPoint currentWayPoint = wayPoints_[index];
-            openList.Remove(index);
+            WayPoint currentWayPoint = wayPoints_[currentNodeIndex];
+            openList.Remove(currentNodeIndex);
             
-            closedList.Add(index);
+            closedList.Add(currentNodeIndex);
             
             //Get all neighbors
-            foreach (Link neighbor in currentWayPoint.neighbors) {
-                int indexNeighbor = 0;
-                for (int i = 0; i < wayPoints_.Count; i++) {
-                    if (wayPoints_[i].transform.position != neighbor.wayPoint.transform.position) continue;
-                    
-                    indexNeighbor = i;
-                    break;
-                }
+            foreach (Link neighbor in currentWayPoint.links_) {
+                int indexNeighbor = neighbor.wayPointIndex;
 
-                float newCost = totalCost[index] + (neighbor.distance * neighbor.weight) +
+                float newCost = totalCost[currentNodeIndex] + (neighbor.distance * neighbor.weight) +
                                 Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition);
 
-                if (!closedList.Contains(indexNeighbor) && (totalCost[indexNeighbor] == 0.0f || totalCost[indexNeighbor] < newCost)) {
-                    cameFrom[indexNeighbor] = index;
+                if (!closedList.Contains(indexNeighbor) && totalCost[indexNeighbor] > newCost) {
+                    cameFrom[indexNeighbor] = currentNodeIndex;
                     totalCost[indexNeighbor] = newCost;
 
                     if (!openList.Contains(indexNeighbor)) {
@@ -108,9 +107,14 @@ public class PathFinder : MonoBehaviour {
                 }
             }
 
-            if (index == endWayPointIndex) {
+            if (currentNodeIndex == endWayPointIndex) {
                 break;
             }
+        }
+
+        Debug.Log("===============================");
+        foreach (int i in closedList) {
+            Debug.Log(i);
         }
         
         //Build path with WayPoint
@@ -134,7 +138,7 @@ public class PathFinder : MonoBehaviour {
 
         for (int index = 0; index < wayPoints_.Count; index++) {
             WayPoint wayPoint = wayPoints_[index];
-            float distance = ManhattanDistance(wayPoint.transform.position, position);
+            float distance = Vector3.Distance(wayPoint.transform.position, position);
 
             if (distance > minDistance) continue;
             minDistance = distance;

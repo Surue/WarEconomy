@@ -9,30 +9,66 @@ using Vector3 = UnityEngine.Vector3;
 namespace AI {
 
 [Serializable]
+public struct EditorLink {
+     public WayPoint wayPoint;
+     public float weight;
+     public float distance;
+ }
+
 public struct Link {
-    public WayPoint wayPoint;
+    public int wayPointIndex;
     public float weight;
     public float distance;
 }
 public class WayPoint : MonoBehaviour {
-
-    public List<Link> neighbors;
     
-    // Start is called before the first frame update
-    void Start() {
-        PathFinder.Instance.RegisterWayPoint(this);
-    }
-
-    void OnDestroy() {
-        PathFinder.Instance.UnregisterWayPoint(this);
-    }
+    [SerializeField] List<EditorLink> neighbors_;
+    public Link[] links_;
+    const int NULL_INDEX = -1;
+    public int index = NULL_INDEX;
 
     void OnValidate() {
-        for (int i = 0; i < neighbors.Count; i++) {
-            Link neighbor = neighbors[i];
+        for (int i = 0; i < neighbors_.Count; i++) {
+            EditorLink neighbor = neighbors_[i];
             neighbor.distance = (Vector3.Distance(transform.position, neighbor.wayPoint.transform.position));
-            
-            neighbors[i] = neighbor;
+
+            neighbors_[i] = neighbor;
+
+            if (!neighbor.wayPoint.IsNeighbor(this)) {
+                neighbor.wayPoint.AddNeighbor(this, neighbor.weight, neighbor.distance);
+            }
+        }
+    }
+
+    bool IsNeighbor(WayPoint wayPoint) {
+        foreach (EditorLink editorLink in neighbors_) {
+            if (editorLink.wayPoint == wayPoint) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void AddNeighbor(WayPoint wayPoint, float weight, float distance) {
+        neighbors_.Add((new EditorLink{wayPoint = wayPoint, weight =  weight, distance = distance}));
+    }
+
+    public void Reset(int newIndex, PathFinder pathFinder) {
+        index = newIndex;
+
+        pathFinder.RegisterWayPoint(this);
+    }
+
+    public void ComputeLinks() {
+        links_ = new Link[neighbors_.Count];
+        
+        for (int i = 0; i < neighbors_.Count; i++) {
+            EditorLink neighbor = neighbors_[i];
+
+            links_[i].distance = neighbor.distance;
+            links_[i].weight = neighbor.weight;
+            links_[i].wayPointIndex = neighbor.wayPoint.index;
         }
     }
 
@@ -43,11 +79,11 @@ public class WayPoint : MonoBehaviour {
         
         Handles.DrawWireDisc(transform.position, Vector3.up, 0.5f);
         
-        if (neighbors == null) return;
+        if (neighbors_ == null) return;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);
         Vector3 position = transform.position;
         
-        foreach (Link neighbor in neighbors) {
+        foreach (EditorLink neighbor in neighbors_) {
             Vector3 neighborPos = neighbor.wayPoint.transform.position;
             Vector3 dir = (position - neighborPos).normalized;
             
@@ -65,11 +101,11 @@ public class WayPoint : MonoBehaviour {
             OnValidate();
         }
         
-        if (neighbors == null) return;
+        if (neighbors_ == null) return;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 1f);
         Vector3 position = transform.position;
         
-        foreach (Link neighbor in neighbors) {
+        foreach (EditorLink neighbor in neighbors_) {
             Vector3 neighborPos = neighbor.wayPoint.transform.position;
             Handles.Label((position + neighborPos) / 2.0f, neighbor.weight + " + " + neighbor.distance.ToString("0.00"));
             Vector3 dir = (position - neighborPos).normalized;
