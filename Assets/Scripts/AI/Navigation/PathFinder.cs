@@ -5,7 +5,7 @@ namespace AI {
 public class PathFinder : MonoBehaviour {
     static PathFinder instance_;
 
-    List<WayPoint> wayPoints_ = new List<WayPoint>();
+    [SerializeField] List<WayPoint> wayPoints_ = new List<WayPoint>();
 
     public static PathFinder Instance {
         get => instance_;
@@ -17,6 +17,7 @@ public class PathFinder : MonoBehaviour {
         } else {
             Destroy(this);
         }
+        
     }
 
     public void Reset() {
@@ -32,6 +33,8 @@ public class PathFinder : MonoBehaviour {
     }
     
     public List<Vector3> GetPath(Vector3 startPosition, Vector3 endPosition) {
+        Debug.Log(wayPoints_.Count);
+        
         return FindPath(startPosition, endPosition);
     }
 
@@ -72,8 +75,8 @@ public class PathFinder : MonoBehaviour {
         int[] cameFrom = new int[wayPoints_.Count];
 
         Vector3 endPosition = wayPoints_[endWayPointIndex].transform.position;
-        
-        while (openList.Count > 0) {
+        int count = 0;
+        while (openList.Count > 0 && count++ < 200) {
             //Sort by priority
             float smallestCost = Mathf.Infinity;
             int currentNodeIndex = 0;
@@ -112,11 +115,10 @@ public class PathFinder : MonoBehaviour {
             }
         }
 
-        Debug.Log("===============================");
-        foreach (int i in closedList) {
-            Debug.Log(i);
+        if (count > 180) {
+            Debug.Log("ERROR");
         }
-        
+
         //Build path with WayPoint
         List<WayPoint> path = new List<WayPoint> {wayPoints_[endWayPointIndex]};
         
@@ -124,6 +126,11 @@ public class PathFinder : MonoBehaviour {
         do {
             path.Add(wayPoints_[cameFrom[lastIndex]]);
 
+            if (cameFrom[lastIndex] == lastIndex) {
+                Debug.Log("ERROR");
+                break;
+            }
+            
             lastIndex = cameFrom[lastIndex];
         } while (lastIndex != startWayPointIndex);
         

@@ -15,6 +15,7 @@ public struct EditorLink {
      public float distance;
  }
 
+[Serializable]
 public struct Link {
     public int wayPointIndex;
     public float weight;
@@ -28,6 +29,7 @@ public class WayPoint : MonoBehaviour {
     public int index = NULL_INDEX;
 
     void OnValidate() {
+        if(neighbors_ == null) return; 
         for (int i = 0; i < neighbors_.Count; i++) {
             EditorLink neighbor = neighbors_[i];
             neighbor.distance = (Vector3.Distance(transform.position, neighbor.wayPoint.transform.position));
@@ -40,7 +42,10 @@ public class WayPoint : MonoBehaviour {
         }
     }
 
-    bool IsNeighbor(WayPoint wayPoint) {
+    public bool IsNeighbor(WayPoint wayPoint) {
+        if (neighbors_ == null) {
+            neighbors_ = new List<EditorLink>();
+        }
         foreach (EditorLink editorLink in neighbors_) {
             if (editorLink.wayPoint == wayPoint) {
                 return true;
@@ -50,11 +55,13 @@ public class WayPoint : MonoBehaviour {
         return false;
     }
 
-    void AddNeighbor(WayPoint wayPoint, float weight, float distance) {
+    public void AddNeighbor(WayPoint wayPoint, float weight, float distance) {
         neighbors_.Add((new EditorLink{wayPoint = wayPoint, weight =  weight, distance = distance}));
     }
 
     public void Reset(int newIndex, PathFinder pathFinder) {
+        neighbors_?.RemoveAll(x => x.wayPoint == null);
+        
         index = newIndex;
 
         pathFinder.RegisterWayPoint(this);
@@ -76,8 +83,9 @@ public class WayPoint : MonoBehaviour {
     void OnDrawGizmos() {
         Gizmos.color = Color.cyan;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.5f);
+
         
-        Handles.DrawWireDisc(transform.position, Vector3.up, 0.5f);
+        Handles.DrawWireDisc(transform.position, Vector3.up, 0.1f);
         
         if (neighbors_ == null) return;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);
@@ -86,8 +94,14 @@ public class WayPoint : MonoBehaviour {
         foreach (EditorLink neighbor in neighbors_) {
             Vector3 neighborPos = neighbor.wayPoint.transform.position;
             Vector3 dir = (position - neighborPos).normalized;
-            
-            Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.1f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.1f, 4.0f);
+
+            if (neighbor.weight == 1) {
+                Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.05f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.05f, 4.0f);
+            }else if (neighbor.weight == 2) {
+                Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.01f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.01f, 1.0f);
+            } else {
+                Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.1f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.1f, 4.0f);
+            }
         }
     }
 
