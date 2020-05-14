@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Numerics;
 using UnityEditor;
 using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
 
 namespace AI {
 
 [Serializable]
 public struct EditorLink {
-     public WayPoint wayPoint;
+     [SerializeField] public WayPoint wayPoint;
      public float weight;
      public float distance;
  }
@@ -24,9 +22,17 @@ public struct Link {
 public class WayPoint : MonoBehaviour {
     
     [SerializeField] List<EditorLink> neighbors_;
-    public Link[] links_;
+    [SerializeField] List<Link> links_;
     const int NULL_INDEX = -1;
-    public int index = NULL_INDEX;
+    [SerializeField] int index = NULL_INDEX;
+
+    public List<Link> Links => links_;
+
+    public int Index => index;
+
+    void Start() {
+        ComputeLinks();
+    }
 
     void OnValidate() {
         if(neighbors_ == null) return; 
@@ -63,19 +69,20 @@ public class WayPoint : MonoBehaviour {
         neighbors_?.RemoveAll(x => x.wayPoint == null);
         
         index = newIndex;
-
-        pathFinder.RegisterWayPoint(this);
     }
 
     public void ComputeLinks() {
-        links_ = new Link[neighbors_.Count];
+        links_ = new List<Link>(neighbors_.Count);
         
         for (int i = 0; i < neighbors_.Count; i++) {
             EditorLink neighbor = neighbors_[i];
 
-            links_[i].distance = neighbor.distance;
-            links_[i].weight = neighbor.weight;
-            links_[i].wayPointIndex = neighbor.wayPoint.index;
+            Link link;
+            link.distance = neighbor.distance;
+            link.weight = neighbor.weight;
+            link.wayPointIndex = neighbor.wayPoint.Index;
+            
+            links_.Add(link);
         }
     }
 
@@ -86,6 +93,7 @@ public class WayPoint : MonoBehaviour {
 
         
         Handles.DrawWireDisc(transform.position, Vector3.up, 0.1f);
+        Handles.Label(transform.position, "index = " + Index);
         
         if (neighbors_ == null) return;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);
@@ -96,8 +104,10 @@ public class WayPoint : MonoBehaviour {
             Vector3 dir = (position - neighborPos).normalized;
 
             if (neighbor.weight == 1) {
+                Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);
                 Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.05f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.05f, 4.0f);
             }else if (neighbor.weight == 2) {
+                Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.25f);
                 Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.01f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.01f, 1.0f);
             } else {
                 Handles.DrawDottedLine(position + Vector3.Cross(dir, Vector3.up) * 0.1f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.1f, 4.0f);
@@ -124,7 +134,15 @@ public class WayPoint : MonoBehaviour {
             Handles.Label((position + neighborPos) / 2.0f, neighbor.weight + " + " + neighbor.distance.ToString("0.00"));
             Vector3 dir = (position - neighborPos).normalized;
             
-            Handles.DrawLine(position + Vector3.Cross(dir, Vector3.up) * 0.1f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.1f);
+            if (neighbor.weight == 1) {
+                Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);
+                Handles.DrawLine(position + Vector3.Cross(dir, Vector3.up) * 0.05f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.05f);
+            }else if (neighbor.weight == 2) {
+                Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.25f);
+                Handles.DrawLine(position + Vector3.Cross(dir, Vector3.up) * 0.01f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.01f);
+            } else {
+                Handles.DrawLine(position + Vector3.Cross(dir, Vector3.up) * 0.1f, neighborPos + Vector3.Cross(dir, Vector3.up) * 0.1f);
+            }
         }
     }
 #endif

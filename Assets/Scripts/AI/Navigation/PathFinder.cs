@@ -1,12 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace AI {
 public class PathFinder : MonoBehaviour {
     static PathFinder instance_;
 
-    [SerializeField] List<WayPoint> wayPoints_ = new List<WayPoint>();
+    [SerializeField] WayPoint[] wayPoints_;
 
+    float[] totalCost;
+
+    int[] cameFrom;
+
+    int[] testedIndex;
+
+    List<Vector3> lastPath_;
+    
     public static PathFinder Instance {
         get => instance_;
     }
@@ -18,23 +28,22 @@ public class PathFinder : MonoBehaviour {
             Destroy(this);
         }
         
-    }
+        WayPoint[] tmp = FindObjectsOfType<WayPoint>();
 
-    public void Reset() {
-        wayPoints_ = new List<WayPoint>();
-    }
-
-    public void RegisterWayPoint(WayPoint wayPoint) {
-        wayPoints_.Add(wayPoint);
-    }
-
-    public void UnregisterWayPoint(WayPoint wayPoint) {
-        wayPoints_.Remove(wayPoint);
-    }
-    
-    public List<Vector3> GetPath(Vector3 startPosition, Vector3 endPosition) {
-        Debug.Log(wayPoints_.Count);
+        wayPoints_ = new WayPoint[tmp.Length];
         
+        foreach (WayPoint wayPoint in tmp) {
+            wayPoints_[wayPoint.Index] = wayPoint;
+        }
+        
+        totalCost = new float[wayPoints_.Length];
+        
+        cameFrom = new int[wayPoints_.Length];
+
+        testedIndex = new int[wayPoints_.Length];
+    }
+
+    public List<Vector3> GetPath(Vector3 startPosition, Vector3 endPosition) {
         return FindPath(startPosition, endPosition);
     }
 
@@ -58,6 +67,8 @@ public class PathFinder : MonoBehaviour {
             path.Add(wayPointsPath[i].transform.position);
         }
         path.Add(endPosition);
+
+        lastPath_ = path; //TODO REMOVE
         
         return path;
     }
@@ -65,14 +76,14 @@ public class PathFinder : MonoBehaviour {
     List<WayPoint> GetPath(int startWayPointIndex, int endWayPointIndex) {
         List<int> openList = new List<int> {startWayPointIndex};
         List<int> closedList = new List<int>();
-        
-        float[] totalCost = new float[wayPoints_.Count];
-        for (int i = 0; i < totalCost.Length; i++) {
-            totalCost[i] = Mathf.Infinity;
+
+        for (int index = 0; index < totalCost.Length; index++) {
+            totalCost[index] = 0;
         }
-        totalCost[startWayPointIndex] = 0f;
         
-        int[] cameFrom = new int[wayPoints_.Count];
+        for (int index = 0; index < cameFrom.Length; index++) {
+            cameFrom[index] = index;
+        }
 
         Vector3 endPosition = wayPoints_[endWayPointIndex].transform.position;
         int count = 0;
@@ -81,7 +92,7 @@ public class PathFinder : MonoBehaviour {
             float smallestCost = Mathf.Infinity;
             int currentNodeIndex = 0;
             foreach (int index in openList) {
-                if (!(totalCost[index] < smallestCost)) continue;
+                if (totalCost[index] > smallestCost) continue;
                 
                 smallestCost = totalCost[index];
                 currentNodeIndex = index;
@@ -90,17 +101,21 @@ public class PathFinder : MonoBehaviour {
             //Get the first one
             WayPoint currentWayPoint = wayPoints_[currentNodeIndex];
             openList.Remove(currentNodeIndex);
+
+            testedIndex[currentNodeIndex] = count;
             
             closedList.Add(currentNodeIndex);
             
             //Get all neighbors
-            foreach (Link neighbor in currentWayPoint.links_) {
-                int indexNeighbor = neighbor.wayPointIndex;
+            for (int i = 0; i < wayPoints_[currentNodeIndex].Links.Count; i++) {
+                int indexNeighbor = wayPoints_[currentNodeIndex].Links[i].wayPointIndex;
 
-                float newCost = totalCost[currentNodeIndex] + (neighbor.distance * neighbor.weight) +
+                float newCost = totalCost[currentNodeIndex] + (wayPoints_[currentNodeIndex].Links[i].distance * wayPoints_[currentNodeIndex].Links[i].weight) +
                                 Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition);
+                
+                if(closedList.Contains(indexNeighbor)) continue;
 
-                if (!closedList.Contains(indexNeighbor) && totalCost[indexNeighbor] > newCost) {
+                if (totalCost[indexNeighbor] > newCost || totalCost[indexNeighbor] == 0) {
                     cameFrom[indexNeighbor] = currentNodeIndex;
                     totalCost[indexNeighbor] = newCost;
 
@@ -143,7 +158,7 @@ public class PathFinder : MonoBehaviour {
 
         float minDistance = Mathf.Infinity;
 
-        for (int index = 0; index < wayPoints_.Count; index++) {
+        for (int index = 0; index < wayPoints_.Length; index++) {
             WayPoint wayPoint = wayPoints_[index];
             float distance = Vector3.Distance(wayPoint.transform.position, position);
 
@@ -158,6 +173,36 @@ public class PathFinder : MonoBehaviour {
     static float ManhattanDistance(Vector3 pos1, Vector3 pos2)
     {
         return Mathf.Abs(pos1.x - pos2.x) + Mathf.Abs(pos1.y - pos2.y);
+    }
+
+    void OnDrawGizmos() {
+        if (totalCost != null && totalCost.Length > 0) {
+            for (int index = 0; index < wayPoints_.Length; index++) {
+                WayPoint wayPoint = wayPoints_[index];
+                if (totalCost[index] != 0) {
+                    Handles.Label(wayPoint.transform.position - new Vector3(0, 0, -1), "c = " + totalCost[index] + "index = " + testedIndex[index]);
+                    DrawArrow(wayPoints_[cameFrom[index]].transform.position, wayPoint.transform.position);
+                }
+            }
+
+            if (lastPath_ != null) {
+                foreach (Vector3 vector3 in lastPath_) {
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawWireSphere(vector3, 0.5f);
+                }
+            }
+        }
+        
+        
+    }
+    
+    void DrawArrow(Vector3 start, Vector3 end) {
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(start, end);
+
+        Vector3 dir = (end - start).normalized;
+        
+        Gizmos.DrawWireSphere(end, 0.1f);
     }
 }
 }

@@ -13,7 +13,8 @@ public class WayPointGraphBuilder : MonoBehaviour {
     [SerializeField] Vector2 mapSize_;
     [SerializeField][Range(1, 10)] float radiusBetweenSubWayPoint_;
 
-    List<WayPoint> subWayPoints_;
+    [SerializeField] List<WayPoint> mainWayPoints_;
+    [SerializeField] List<WayPoint> subWayPoints_;
     void OnValidate() {
         if (radiusBetweenSubWayPoint_ <= 1) {
             radiusBetweenSubWayPoint_ = 1f;
@@ -33,15 +34,16 @@ public class WayPointGraphBuilder : MonoBehaviour {
         }
         
         subWayPoints_ = new List<WayPoint>();
+        mainWayPoints_ = new List<WayPoint>();
 
         List<WayPoint> wayPoints = FindObjectsOfType<WayPoint>().ToList();
 
         PathFinder pathFinder = FindObjectOfType<PathFinder>();
 
-        pathFinder.Reset();
-
         for (int i = 0; i < wayPoints.Count; i++) {
             wayPoints[i].Reset(i, pathFinder);
+            
+            mainWayPoints_.Add(wayPoints[i]);
         }
         
         for (int i = 0; i < wayPoints.Count; i++) {
