@@ -39,9 +39,10 @@ public class RandomWalker : MonoBehaviour {
     }
 
     void OnDrawGizmos() {
-        if (path_ != null) {
-            foreach (Vector3 vector3 in path_) {
-                Gizmos.DrawCube(vector3, Vector3.one);
+        if (path_ != null && path_.Count > 0) {
+            Gizmos.DrawLine(transform.position, path_[0]);
+            for(int i = 0; i < path_.Count - 1; i++) {
+                Gizmos.DrawLine(path_[i], path_[i + 1]);
             }
         }
     }

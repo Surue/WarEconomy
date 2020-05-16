@@ -93,7 +93,6 @@ public class WayPoint : MonoBehaviour {
 
         
         Handles.DrawWireDisc(transform.position, Vector3.up, 0.1f);
-        Handles.Label(transform.position, "index = " + Index);
         
         if (neighbors_ == null) return;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);

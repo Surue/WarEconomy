@@ -13,8 +13,6 @@ public class PathFinder : MonoBehaviour {
 
     int[] cameFrom;
 
-    int[] testedIndex;
-
     List<Vector3> lastPath_;
     
     public static PathFinder Instance {
@@ -39,8 +37,6 @@ public class PathFinder : MonoBehaviour {
         totalCost = new float[wayPoints_.Length];
         
         cameFrom = new int[wayPoints_.Length];
-
-        testedIndex = new int[wayPoints_.Length];
     }
 
     public List<Vector3> GetPath(Vector3 startPosition, Vector3 endPosition) {
@@ -86,8 +82,7 @@ public class PathFinder : MonoBehaviour {
         }
 
         Vector3 endPosition = wayPoints_[endWayPointIndex].transform.position;
-        int count = 0;
-        while (openList.Count > 0 && count++ < 200) {
+        while (openList.Count > 0) {
             //Sort by priority
             float smallestCost = Mathf.Infinity;
             int currentNodeIndex = 0;
@@ -101,17 +96,15 @@ public class PathFinder : MonoBehaviour {
             //Get the first one
             WayPoint currentWayPoint = wayPoints_[currentNodeIndex];
             openList.Remove(currentNodeIndex);
-
-            testedIndex[currentNodeIndex] = count;
             
             closedList.Add(currentNodeIndex);
             
             //Get all neighbors
-            for (int i = 0; i < wayPoints_[currentNodeIndex].Links.Count; i++) {
-                int indexNeighbor = wayPoints_[currentNodeIndex].Links[i].wayPointIndex;
+            for (int i = 0; i < currentWayPoint.Links.Count; i++) {
+                int indexNeighbor = currentWayPoint.Links[i].wayPointIndex;
 
-                float newCost = totalCost[currentNodeIndex] + (wayPoints_[currentNodeIndex].Links[i].distance * wayPoints_[currentNodeIndex].Links[i].weight) +
-                                Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition);
+                float newCost = totalCost[currentNodeIndex] + (currentWayPoint.Links[i].distance * currentWayPoint.Links[i].weight) +
+                                Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition) * 5f;
                 
                 if(closedList.Contains(indexNeighbor)) continue;
 
@@ -128,10 +121,6 @@ public class PathFinder : MonoBehaviour {
             if (currentNodeIndex == endWayPointIndex) {
                 break;
             }
-        }
-
-        if (count > 180) {
-            Debug.Log("ERROR");
         }
 
         //Build path with WayPoint
@@ -176,23 +165,6 @@ public class PathFinder : MonoBehaviour {
     }
 
     void OnDrawGizmos() {
-        if (totalCost != null && totalCost.Length > 0) {
-            for (int index = 0; index < wayPoints_.Length; index++) {
-                WayPoint wayPoint = wayPoints_[index];
-                if (totalCost[index] != 0) {
-                    Handles.Label(wayPoint.transform.position - new Vector3(0, 0, -1), "c = " + totalCost[index] + "index = " + testedIndex[index]);
-                    DrawArrow(wayPoints_[cameFrom[index]].transform.position, wayPoint.transform.position);
-                }
-            }
-
-            if (lastPath_ != null) {
-                foreach (Vector3 vector3 in lastPath_) {
-                    Gizmos.color = Color.red;
-                    Gizmos.DrawWireSphere(vector3, 0.5f);
-                }
-            }
-        }
-        
         
     }
     
