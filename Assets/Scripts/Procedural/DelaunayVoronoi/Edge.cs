@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Procedural {
 public sealed class Edge {
-    private static Stack<Edge> pool_ = new Stack<Edge>();
+    static Stack<Edge> pool_ = new Stack<Edge>();
 
     public float a, b, c;
 
@@ -15,7 +15,7 @@ public sealed class Edge {
 
     Dictionary<Side, Nullable<Vector2>> clippedVertices_;
 
-    public Dictionary<Side, Nullable<Vector2>> clippedEnds => clippedVertices_;
+    public Dictionary<Side, Nullable<Vector2>> ClippedEnds => clippedVertices_;
 
     Dictionary<Side, Site> sites_;
 
@@ -39,15 +39,14 @@ public sealed class Edge {
     public Vertex LeftVertex => leftVertex_;
 
     public static Edge CreateBisectingEdge(Site site0, Site site1) {
-        float dx, dy, absdx, absdy;
         float a, b, c;
 
-        dx = site1.X - site0.X;
-        dy = site1.Y - site0.Y;
-        absdx = dx > 0 ? dx : -dx;
-        absdy = dy > 0 ? dy : -dy;
+        float dx = site1.X - site0.X;
+        float dy = site1.Y - site0.Y;
+        float absDx = dx > 0 ? dx : -dx;
+        float absDy = dy > 0 ? dy : -dy;
         c = site0.X * dx + site0.Y * dy + (dx * dx + dy * dy) * 0.5f;
-        if (absdx > absdy) {
+        if (absDx > absDy) {
             a = 1.0f;
             b = dy / dx;
             c /= dx;
@@ -87,16 +86,12 @@ public sealed class Edge {
         return edge;
     }
 
-    public Segment DelaunaySegment() {
-        return new Segment(LeftSite.Position, RightSite.Position);
+    public Segment2D DelaunaySegment() {
+        return new Segment2D(LeftSite.Position, RightSite.Position);
     }
 
-    public Segment VoronoiSegment() {
-        if (!Visible) {
-            return new Segment(null, null);
-        }
-
-        return new Segment(clippedVertices_[Side.LEFT], clippedVertices_[Side.RIGHT]);
+    public Segment2D VoronoiSegment() {
+        return !Visible ? new Segment2D(null, null) : new Segment2D(clippedVertices_[Side.LEFT], clippedVertices_[Side.RIGHT]);
     }
 
     public Vertex Vertex(Side leftRight) {
@@ -170,22 +165,22 @@ public sealed class Edge {
     }
 
     public override string ToString() {
-        return "Edge " + edgeIndex_.ToString() + "; sites " + sites_[Side.LEFT].ToString() + ", " +
-               sites_[Side.RIGHT].ToString()
+        return "Edge " + edgeIndex_ + "; sites " + sites_[Side.LEFT] + ", " +
+               sites_[Side.RIGHT]
                + "; endVertices " + ((leftVertex_ != null) ? leftVertex_.VertexIndex.ToString() : "null") + ", "
                + ((rightVertex_ != null) ? rightVertex_.VertexIndex.ToString() : "null") + "::";
     }
 
     public void ClipVertices(Rect bounds) {
-        float xmin = bounds.xMin;
-        float ymin = bounds.yMin;
-        float xmax = bounds.xMax;
-        float ymax = bounds.yMax;
+        float xMin = bounds.xMin;
+        float yMin = bounds.yMin;
+        float xMax = bounds.xMax;
+        float yMax = bounds.yMax;
 
         Vertex vertex0, vertex1;
         float x0, x1, y0, y1;
 
-        if (a == 1.0 && b >= 0.0) {
+        if (a == 1.0f && b >= 0.0f) {
             vertex0 = rightVertex_;
             vertex1 = leftVertex_;
         } else {
@@ -193,88 +188,88 @@ public sealed class Edge {
             vertex1 = rightVertex_;
         }
 
-        if (a == 1.0) {
-            y0 = ymin;
-            if (vertex0 != null && vertex0.Y > ymin) {
+        if (a == 1.0f) {
+            y0 = yMin;
+            if (vertex0 != null && vertex0.Y > yMin) {
                 y0 = vertex0.Y;
             }
 
-            if (y0 > ymax) {
+            if (y0 > yMax) {
                 return;
             }
 
             x0 = c - b * y0;
 
-            y1 = ymax;
-            if (vertex1 != null && vertex1.Y < ymax) {
+            y1 = yMax;
+            if (vertex1 != null && vertex1.Y < yMax) {
                 y1 = vertex1.Y;
             }
 
-            if (y1 < ymin) {
+            if (y1 < yMin) {
                 return;
             }
 
             x1 = c - b * y1;
 
-            if ((x0 > xmax && x1 > xmax) || (x0 < xmin && x1 < xmin)) {
+            if ((x0 > xMax && x1 > xMax) || (x0 < xMin && x1 < xMin)) {
                 return;
             }
 
-            if (x0 > xmax) {
-                x0 = xmax;
+            if (x0 > xMax) {
+                x0 = xMax;
                 y0 = (c - x0) / b;
-            } else if (x0 < xmin) {
-                x0 = xmin;
+            } else if (x0 < xMin) {
+                x0 = xMin;
                 y0 = (c - x0) / b;
             }
 
-            if (x1 > xmax) {
-                x1 = xmax;
+            if (x1 > xMax) {
+                x1 = xMax;
                 y1 = (c - x1) / b;
-            } else if (x1 < xmin) {
-                x1 = xmin;
+            } else if (x1 < xMin) {
+                x1 = xMin;
                 y1 = (c - x1) / b;
             }
         } else {
-            x0 = xmin;
-            if (vertex0 != null && vertex0.X > xmin) {
+            x0 = xMin;
+            if (vertex0 != null && vertex0.X > xMin) {
                 x0 = vertex0.X;
             }
 
-            if (x0 > xmax) {
+            if (x0 > xMax) {
                 return;
             }
 
             y0 = c - a * x0;
 
-            x1 = xmax;
-            if (vertex1 != null && vertex1.X < xmax) {
+            x1 = xMax;
+            if (vertex1 != null && vertex1.X < xMax) {
                 x1 = vertex1.X;
             }
 
-            if (x1 < xmin) {
+            if (x1 < xMin) {
                 return;
             }
 
             y1 = c - a * x1;
 
-            if ((y0 > ymax && y1 > ymax) || (y0 < ymin && y1 < ymin)) {
+            if ((y0 > yMax && y1 > yMax) || (y0 < yMin && y1 < yMin)) {
                 return;
             }
 
-            if (y0 > ymax) {
-                y0 = ymax;
+            if (y0 > yMax) {
+                y0 = yMax;
                 x0 = (c - y0) / a;
-            } else if (y0 < ymin) {
-                y0 = ymin;
+            } else if (y0 < yMin) {
+                y0 = yMin;
                 x0 = (c - y0) / a;
             }
 
-            if (y1 > ymax) {
-                y1 = ymax;
+            if (y1 > yMax) {
+                y1 = yMax;
                 x1 = (c - y1) / a;
-            } else if (y1 < ymin) {
-                y1 = ymin;
+            } else if (y1 < yMin) {
+                y1 = yMin;
                 x1 = (c - y1) / a;
             }
         }

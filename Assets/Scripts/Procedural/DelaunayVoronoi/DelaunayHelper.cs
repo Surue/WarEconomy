@@ -17,16 +17,13 @@ public enum KruskalType {
 }
 
 public static class DelaunayHelper {
-    public static List<Segment> VisibleLineSegments(List<Edge> edges) {
-        List<Segment> segments = new List<Segment> ();
+    public static List<Segment2D> VisibleLineSegments(List<Edge> edges) {
+        List<Segment2D> segments = new List<Segment2D> ();
 			
-        for (int i = 0; i < edges.Count; i++) {
-            Edge edge = edges [i];
-            if (edge.Visible) {
-                Nullable<Vector2> p1 = edge.clippedEnds[Side.LEFT];
-                Nullable<Vector2> p2 = edge.clippedEnds[Side.RIGHT];
-                segments.Add (new Segment(p1, p2));
-            }
+        foreach (Edge edge in edges) {
+            if (!edge.Visible) continue;
+            
+            segments.Add (new Segment2D(edge.ClippedEnds[Side.LEFT],edge.ClippedEnds[Side.RIGHT]));
         }
 			
         return segments;
@@ -41,76 +38,74 @@ public static class DelaunayHelper {
         return edgesToTest;
     }
 
-    public static List<Segment> DelaunayLinesForEdges(List<Edge> edges) {
-        List<Segment> segments = new List<Segment>();
+    public static List<Segment2D> DelaunayLinesForEdges(List<Edge> edges) {
+        List<Segment2D> segments = new List<Segment2D>();
 
-        Edge edge;
-        for (int i = 0; i < edges.Count; i++) {
-            edge = edges[i];
-            segments.Add(edge.DelaunaySegment());
+        foreach (Edge t in edges) {
+            segments.Add(t.DelaunaySegment());
         }
 
         return segments;
     }
 
-    public static List<Segment> Kruksal(List<Segment> segments, KruskalType type = KruskalType.MINIMUM) {
+    public static List<Segment2D> Kruskal(List<Segment2D> segments, KruskalType type = KruskalType.MINIMUM) {
         Dictionary<Nullable<Vector2>, Node> nodes = new Dictionary<Nullable<Vector2>, Node>();
-        List<Segment> mst = new List<Segment>();
+        List<Segment2D> mst = new List<Segment2D>();
         Stack<Node> nodePool = Node.pool;
 
         switch (type) {
             case KruskalType.MINIMUM:
-                segments.Sort(delegate(Segment s1, Segment s2) { return Segment.CompareLengthsMax(s1, s2); });
+                segments.Sort(Segment2D.CompareLengthsMax);
                 break;
             case KruskalType.MAXIMUM:
-                segments.Sort(delegate(Segment s1, Segment s2) { return Segment.CompareLengths(s1, s2); });
+                segments.Sort(Segment2D.CompareLengths);
                 break;
         }
 
         for (int i = segments.Count; --i > -1;) {
-            Segment segment = segments[i];
+            Segment2D segment2D = segments[i];
 
-            Node node0 = null;
+            Node node0;
             Node rootOfSet0;
-            if (!nodes.ContainsKey(segment.p0)) {
+            if (!nodes.ContainsKey(segment2D.p0)) {
                 node0 = nodePool.Count > 0 ? nodePool.Pop() : new Node();
 
                 rootOfSet0 = node0.parent = node0;
                 node0.treeSize = 1;
 
-                nodes[segment.p0] = node0;
+                nodes[segment2D.p0] = node0;
             } else {
-                node0 = nodes[segment.p0];
+                node0 = nodes[segment2D.p0];
                 rootOfSet0 = Find(node0);
             }
 
-            Node node1 = null;
+            Node node1;
             Node rootOfSet1;
-            if (!nodes.ContainsKey(segment.p1)) {
+            if (!nodes.ContainsKey(segment2D.p1)) {
                 node1 = nodePool.Count > 0 ? nodePool.Pop() : new Node();
 
                 rootOfSet1 = node1.parent = node1;
                 node1.treeSize = 1;
 
-                nodes[segment.p1] = node1;
+                nodes[segment2D.p1] = node1;
             } else {
-                node1 = nodes[segment.p1];
+                node1 = nodes[segment2D.p1];
                 rootOfSet1 = Find(node1);
             }
 
-            if (rootOfSet0 != rootOfSet1) {
-                mst.Add(segment);
+            if (rootOfSet0 == rootOfSet1) continue;
+            
+            mst.Add(segment2D);
 
-                int treeSize0 = rootOfSet0.treeSize;
-                int treeSize1 = rootOfSet1.treeSize;
+            int treeSize0 = rootOfSet0.treeSize;
+            int treeSize1 = rootOfSet1.treeSize;
 
-                if (treeSize0 >= treeSize1) {
-                    rootOfSet1.parent = rootOfSet0;
-                    rootOfSet0.treeSize += treeSize1;
-                } else {
-                    rootOfSet0.parent = rootOfSet1;
-                    rootOfSet1.treeSize += treeSize0;
-                }
+            if (treeSize0 >= treeSize1) {
+                rootOfSet1.parent = rootOfSet0;
+                rootOfSet0.treeSize += treeSize1;
+            } else {
+                rootOfSet0.parent = rootOfSet1;
+                rootOfSet1.treeSize += treeSize0;
             }
         }
 
@@ -124,11 +119,11 @@ public static class DelaunayHelper {
     static Node Find(Node node) {
         if (node.parent == node) {
             return node;
-        } else {
-            Node root = Find(node.parent);
-            node.parent = root;
-            return root;
         }
+
+        Node root = Find(node.parent);
+        node.parent = root;
+        return root;
     }
 }
 }

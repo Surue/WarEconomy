@@ -30,7 +30,6 @@ sealed class EdgeReorderer {
     }
 
     List<Edge> ReorderEdges(List<Edge> edges, VertexOrSite criteria) {
-        int i;
         int n = edges.Count;
         Edge edge;
         // we're going to reorder the edges in order of traversal
@@ -42,22 +41,21 @@ sealed class EdgeReorderer {
 
         List<Edge> newEdges = new List<Edge>();
 
-        i = 0;
-        edge = edges[i];
+        edge = edges[0];
         newEdges.Add(edge);
         edgeOrientation_.Add(Side.LEFT);
-        Vector2 firstPoint = (criteria == VertexOrSite.VERTEX) ? edge.LeftVertex.Position : edge.LeftSite.Position;
-        Vector2 lastPoint = (criteria == VertexOrSite.VERTEX) ? edge.RightVertex.Position : edge.RightSite.Position;
+        Vector2 firstPoint = criteria == VertexOrSite.VERTEX ? edge.LeftVertex.Position : edge.LeftSite.Position;
+        Vector2 lastPoint = criteria == VertexOrSite.VERTEX ? edge.RightVertex.Position : edge.RightSite.Position;
 
         if (firstPoint == Vertex.VERTEX_AT_INFINITY.Position || lastPoint == Vertex.VERTEX_AT_INFINITY.Position) {
             return new List<Edge>();
         }
 
-        done[i] = true;
+        done[0] = true;
         ++nDone;
 
         while (nDone < n) {
-            for (i = 1; i < n; ++i) {
+            for (int i = 1; i < n; ++i) {
                 if (done[i]) {
                     continue;
                 }

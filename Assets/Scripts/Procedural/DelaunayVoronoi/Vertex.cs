@@ -30,11 +30,7 @@ public sealed class Vertex {
             return VERTEX_AT_INFINITY;
         }
 
-        if (pool_.Count > 0) {
-            return pool_.Pop().Init(x, y);
-        } else {
-            return new Vertex(x, y);
-        }
+        return pool_.Count > 0 ? pool_.Pop().Init(x, y) : new Vertex(x, y);
     }
 
     Vertex Init(float x, float y) {
@@ -54,14 +50,13 @@ public sealed class Vertex {
         return "Vertex (" + vertexIndex_ + ")";
     }
 
-    public static Vertex Intersect(Halfedge halfedge0, Halfedge halfedge1) {
-        Edge edge0, edge1, edge;
-        Halfedge halfedge;
-        float determinant, intersectionX, intersectionY;
+    public static Vertex Intersect(HalfEdge halfEdge0, HalfEdge halfEdge1) {
+        Edge edge;
+        HalfEdge halfEdge;
         bool rightOfSite;
 		
-        edge0 = halfedge0.edge;
-        edge1 = halfedge1.edge;
+        Edge edge0 = halfEdge0.edge;
+        Edge edge1 = halfEdge1.edge;
         if (edge0 == null || edge1 == null) {
             return null;
         }
@@ -69,29 +64,29 @@ public sealed class Vertex {
             return null;
         }
 		
-        determinant = edge0.a * edge1.b - edge0.b * edge1.a;
+        float determinant = edge0.a * edge1.b - edge0.b * edge1.a;
+        
+        // If the edges are parallel => return null.
         if (-1.0e-10 < determinant && determinant < 1.0e-10) {
-            // the edges are parallel
             return null;
         }
 		
-        intersectionX = (edge0.c * edge1.b - edge1.c * edge0.b) / determinant;
-        intersectionY = (edge1.c * edge0.a - edge0.c * edge1.a) / determinant;
+        float intersectionX = (edge0.c * edge1.b - edge1.c * edge0.b) / determinant;
+        float intersectionY = (edge1.c * edge0.a - edge0.c * edge1.a) / determinant;
 		
         if (Voronoi.CompareByYThenX (edge0.RightSite, edge1.RightSite) < 0) {
-            halfedge = halfedge0;
+            halfEdge = halfEdge0;
             edge = edge0;
         } else {
-            halfedge = halfedge1;
+            halfEdge = halfEdge1;
             edge = edge1;
         }
         rightOfSite = intersectionX >= edge.RightSite.X;
-        if ((rightOfSite && halfedge.leftRight == Side.LEFT)
-            || (!rightOfSite && halfedge.leftRight == Side.RIGHT)) {
+        if (rightOfSite && halfEdge.leftRight == Side.LEFT || !rightOfSite && halfEdge.leftRight == Side.RIGHT) {
             return null;
         }
 		
-        return Vertex.Create (intersectionX, intersectionY);
+        return Create (intersectionX, intersectionY);
     }
 }
 }

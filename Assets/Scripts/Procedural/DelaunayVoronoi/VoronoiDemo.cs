@@ -10,9 +10,9 @@ public class VoronoiDemo : MonoBehaviour {
     List<Vector2> points_;
     float mapWidth_ = 100;
     float mapHeight_ = 50;
-    List<Segment> edges_ = null;
-    List<Segment> spanningTree_;
-    List<Segment> delaunayTriangulation_;
+    List<Segment2D> edges_ = null;
+    List<Segment2D> spanningTree_;
+    List<Segment2D> delaunayTriangulation_;
 
     void Awake() {
         Demo();
@@ -72,10 +72,10 @@ public class VoronoiDemo : MonoBehaviour {
         if (spanningTree_ != null) {
             Gizmos.color = Color.green;
             for (int i = 0; i < spanningTree_.Count; i++) {
-                Segment segment = spanningTree_[i];
+                Segment2D segment2D = spanningTree_[i];
                 
-                Vector2 left = (Vector2)segment.p0;
-                Vector2 right = (Vector2)segment.p1;
+                Vector2 left = (Vector2)segment2D.p0;
+                Vector2 right = (Vector2)segment2D.p1;
                 
                 Gizmos.DrawLine(left, right);
             }

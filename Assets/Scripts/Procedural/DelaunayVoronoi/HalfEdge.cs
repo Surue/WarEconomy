@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Procedural {
-public sealed class Halfedge {
-    static Stack<Halfedge> pool_ = new Stack<Halfedge>();
+public sealed class HalfEdge {
+    static Stack<HalfEdge> pool_ = new Stack<HalfEdge>();
 
-    public Halfedge edgeListLeftNeighbor, edgeListRightNeighbor;
-    public Halfedge nextInPriorityQueue;
+    public HalfEdge edgeListLeftNeighbor, edgeListRightNeighbor;
+    public HalfEdge nextInPriorityQueue;
 
     public Edge edge;
     public Nullable<Side> leftRight;
@@ -15,23 +15,23 @@ public sealed class Halfedge {
 
     public float yStar;
 
-    public Halfedge(Edge edge = null, Nullable<Side> leftRight = null) {
+    public HalfEdge(Edge edge = null, Nullable<Side> leftRight = null) {
         Init(edge, leftRight);
     }
     
-    public static Halfedge Create(Edge edge, Nullable<Side> leftRight) {
+    public static HalfEdge Create(Edge edge, Nullable<Side> leftRight) {
         if (pool_.Count > 0) {
             return pool_.Pop().Init(edge, leftRight);
         } else {
-            return new Halfedge(edge, leftRight);
+            return new HalfEdge(edge, leftRight);
         }
     }
 
-    public static Halfedge CreateDummy() {
+    public static HalfEdge CreateDummy() {
         return Create(null, null);
     }
 
-    Halfedge Init(Edge edge, Nullable<Side> leftRight) {
+    HalfEdge Init(Edge edge, Nullable<Side> leftRight) {
         this.edge = edge;
         this.leftRight = leftRight;
         nextInPriorityQueue = null;
@@ -40,7 +40,7 @@ public sealed class Halfedge {
     }
 
     public override string ToString() {
-        return "Halfedge (leftRight : " + leftRight.ToString() + ", vertex: " + vertex.ToString() + ")";
+        return "Halfedge (leftRight : " + leftRight + ", vertex: " + vertex + ")";
     }
 
     public void Dispose() {
@@ -66,11 +66,9 @@ public sealed class Halfedge {
     }
 
     internal bool IsLeftOf(Vector2 pos) {
-        Site topSite;
-        bool rightOfSite, above, fast;
-        float dxp, dyp, dxs, t1, t2, t3, yl;
-			
-        topSite = edge.RightSite;
+        bool rightOfSite, above;
+
+        Site topSite = edge.RightSite;
         rightOfSite = pos.x > topSite.X;
         if (rightOfSite && leftRight == Side.LEFT) {
             return true;
@@ -80,9 +78,9 @@ public sealed class Halfedge {
         }
 			
         if (edge.a == 1.0) {
-            dyp = pos.y - topSite.Y;
-            dxp = pos.x - topSite.X;
-            fast = false;
+            float dyp = pos.y - topSite.Y;
+            float dxp = pos.x - topSite.X;
+            bool fast = false;
             if ((!rightOfSite && edge.b < 0.0) || (rightOfSite && edge.b >= 0.0)) {
                 above = dyp >= edge.b * dxp;	
                 fast = above;
@@ -95,19 +93,20 @@ public sealed class Halfedge {
                     fast = true;
                 }
             }
-            if (!fast) {
-                dxs = topSite.X - edge.LeftSite.X;
-                above = edge.b * (dxp * dxp - dyp * dyp) <
-                        dxs * dyp * (1.0 + 2.0 * dxp / dxs + edge.b * edge.b);
-                if (edge.b < 0.0) {
-                    above = !above;
-                }
+
+            if (fast) return leftRight == Side.LEFT ? above : !above;
+            
+            float dxs = topSite.X - edge.LeftSite.X;
+            above = edge.b * (dxp * dxp - dyp * dyp) <
+                    dxs * dyp * (1.0 + 2.0 * dxp / dxs + edge.b * edge.b);
+            if (edge.b < 0.0) {
+                above = !above;
             }
-        } else {  /* edge.b == 1.0 */
-            yl = edge.c - edge.a * pos.x;
-            t1 = pos.y - yl;
-            t2 = pos.x - topSite.X;
-            t3 = yl - topSite.Y;
+        } else { 
+            float yl = edge.c - edge.a * pos.x;
+            float t1 = pos.y - yl;
+            float t2 = pos.x - topSite.X;
+            float t3 = yl - topSite.Y;
             above = t1 * t1 > t2 * t2 + t3 * t3;
         }
         return leftRight == Side.LEFT ? above : !above;

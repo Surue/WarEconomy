@@ -19,8 +19,7 @@ public sealed class SiteList {
     public void Dispose() {
         if (sites_ == null) return;
 
-        for (int i = 0; i < sites_.Count; i++) {
-            Site site = sites_[i];
+        foreach (Site site in sites_) {
             site.Dispose();
         }
         
@@ -40,11 +39,7 @@ public sealed class SiteList {
             Debug.LogError("SiteList not sorted");
         }
 
-        if (currentIndex_ < sites_.Count) {
-            return sites_[currentIndex_++];
-        } else {
-            return null;
-        }
+        return currentIndex_ < sites_.Count ? sites_[currentIndex_++] : null;
     }
 
     internal Rect GetSiteBounds() {
@@ -57,12 +52,10 @@ public sealed class SiteList {
         if (sites_.Count == 0) {
             return new Rect(0, 0, 0, 0);
         }
-        
-        float xMin, xMax, yMin, yMax;
-        xMin = float.MaxValue;
-        xMax = float.MinValue;
-        for (int i = 0; i < sites_.Count; i++) {
-            Site site = sites_[i];
+
+        float xMin = float.MaxValue;
+        float xMax = float.MinValue;
+        foreach (Site site in sites_) {
             if (site.X < xMin) {
                 xMin = site.X;
             }
@@ -72,17 +65,16 @@ public sealed class SiteList {
             }
         }
 
-        yMin = sites_[0].Y;
-        yMax = sites_[sites_.Count - 1].Y;
+        float yMin = sites_[0].Y;
+        float yMax = sites_[sites_.Count - 1].Y;
         
         return new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
     }
 
     public List<uint> SiteColor() {
         List<uint> colors = new List<uint>();
-        Site site;
-        for (int i = 0; i < sites_.Count; i++) {
-            site = sites_[i];
+        
+        foreach (Site site in sites_) {
             colors.Add(site.color);
         }
 
@@ -92,21 +84,17 @@ public sealed class SiteList {
     public List<Vector2> SitePositions() {
         List<Vector2> positions = new List<Vector2>();
 
-        Site site;
-        for (int i = 0; i < sites_.Count; i++) {
-            site = sites_[i];
+        foreach (Site site in sites_) {
             positions.Add(site.Position);
         }
 
         return positions;
     }
 
-    public List<Circle> Circles() {
-        List<Circle> circles = new List<Circle>();
+    public List<Circle2D> Circles() {
+        List<Circle2D> circles = new List<Circle2D>();
 
-        Site site;
-        for (int i = 0; i < sites_.Count; i++) {
-            site = sites_[i];
+        foreach (Site site in sites_) {
             float radius = 0.0f;
             Edge nearestEdge = site.NearestEdge();
 
@@ -114,7 +102,7 @@ public sealed class SiteList {
                 radius = nearestEdge.SitesDistance() * 0.5f;
             }
             
-            circles.Add(new Circle(site.X, site.Y, radius));
+            circles.Add(new Circle2D(site.X, site.Y, radius));
         }
 
         return circles;
@@ -123,9 +111,7 @@ public sealed class SiteList {
     public List<List<Vector2>> Regions(Rect plotBounds) {
         List<List<Vector2>> regions = new List<List<Vector2>>();
 
-        Site site;
-        for (int i = 0; i < sites_.Count; i++) {
-            site = sites_[i];
+        foreach (Site site in sites_) {
             regions.Add(site.Region(plotBounds));
         }
 

@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 
 namespace Procedural {
-sealed class HalfedgePriorityQueue {
-    Halfedge[] hash_;
+sealed class HalfEdgePriorityQueue {
+    HalfEdge[] hash_;
     int count_;
     int minBucket_;
     int hashSize_;
@@ -10,7 +10,7 @@ sealed class HalfedgePriorityQueue {
     float yMin_;
     float deltaY_;
 
-    public HalfedgePriorityQueue(float yMin, float deltaY, int sqrtNSites) {
+    public HalfEdgePriorityQueue(float yMin, float deltaY, int sqrtNSites) {
         yMin_ = yMin;
         deltaY_ = deltaY;
         hashSize_ = 4 * sqrtNSites;
@@ -29,49 +29,50 @@ sealed class HalfedgePriorityQueue {
     void Init() {
         count_ = 0;
         minBucket_ = 0;
-        hash_ = new Halfedge[hashSize_];
+        hash_ = new HalfEdge[hashSize_];
 
         for (int i = 0; i < hashSize_; i++) {
-            hash_[i] = Halfedge.CreateDummy();
+            hash_[i] = HalfEdge.CreateDummy();
             hash_[i].nextInPriorityQueue = null;
         }
     }
 
-    public void Insert(Halfedge halfedge) {
-        Halfedge previous, next;
-        int insertionBucket = Bucket (halfedge);
+    public void Insert(HalfEdge halfEdge) {
+        HalfEdge next;
+        int insertionBucket = Bucket (halfEdge);
         if (insertionBucket < minBucket_) {
             minBucket_ = insertionBucket;
         }
-        previous = hash_[insertionBucket];
-        while ((next = previous.nextInPriorityQueue) != null
-               &&     (halfedge.yStar  > next.yStar || (halfedge.yStar == next.yStar && halfedge.vertex.X > next.vertex.X))) {
+        
+        HalfEdge previous = hash_[insertionBucket];
+        while ((next = previous.nextInPriorityQueue) != null && 
+               (halfEdge.yStar  > next.yStar || halfEdge.yStar == next.yStar && halfEdge.vertex.X > next.vertex.X)) {
             previous = next;
         }
-        halfedge.nextInPriorityQueue = previous.nextInPriorityQueue; 
-        previous.nextInPriorityQueue = halfedge;
+        
+        halfEdge.nextInPriorityQueue = previous.nextInPriorityQueue; 
+        previous.nextInPriorityQueue = halfEdge;
         ++count_;
     }
 
-    public void Remove(Halfedge halfedge) {
-        Halfedge previous;
-        int removalBucket = Bucket (halfedge);
-			
-        if (halfedge.vertex != null) {
-            previous = hash_[removalBucket];
-            while (previous.nextInPriorityQueue != halfedge) {
-                previous = previous.nextInPriorityQueue;
-            }
-            previous.nextInPriorityQueue = halfedge.nextInPriorityQueue;
-            count_--;
-            halfedge.vertex = null;
-            halfedge.nextInPriorityQueue = null;
-            halfedge.Dispose ();
+    public void Remove(HalfEdge halfEdge) {
+        int removalBucket = Bucket (halfEdge);
+
+        if (halfEdge.vertex == null) return;
+        
+        HalfEdge previous = hash_[removalBucket];
+        while (previous.nextInPriorityQueue != halfEdge) {
+            previous = previous.nextInPriorityQueue;
         }
+        previous.nextInPriorityQueue = halfEdge.nextInPriorityQueue;
+        count_--;
+        halfEdge.vertex = null;
+        halfEdge.nextInPriorityQueue = null;
+        halfEdge.Dispose ();
     }
 
-    int Bucket(Halfedge halfedge) {
-        int bucket = (int) ((halfedge.yStar - yMin_) / deltaY_ * hashSize_);
+    int Bucket(HalfEdge halfEdge) {
+        int bucket = (int) ((halfEdge.yStar - yMin_) / deltaY_ * hashSize_);
 
         if (bucket < 0) {
             bucket = 0;
@@ -100,12 +101,12 @@ sealed class HalfedgePriorityQueue {
 
     public Vector2 Min() {
         AdjustMinBucket();
-        Halfedge result = hash_[minBucket_].nextInPriorityQueue;
+        HalfEdge result = hash_[minBucket_].nextInPriorityQueue;
         return new Vector2(result.vertex.X, result.yStar);
     }
 
-    public Halfedge ExtractMin() {
-        Halfedge result = hash_[minBucket_].nextInPriorityQueue;
+    public HalfEdge ExtractMin() {
+        HalfEdge result = hash_[minBucket_].nextInPriorityQueue;
 
         hash_[minBucket_].nextInPriorityQueue = result.nextInPriorityQueue;
         count_--;
