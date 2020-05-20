@@ -7,7 +7,7 @@ public class PoissonPoint {
     public float radius;
 }
 
-public class PoissonDisk : MonoBehaviour {
+public class PoissonDisk {
     public static List<PoissonPoint> Generate(Vector2 sampleRegionSize, float minRadius, float maxRadius, int rejectionNumber) {
         float cellSize = minRadius / Mathf.Sqrt(2);
         //Build the grid 

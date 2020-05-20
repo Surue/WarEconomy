@@ -1,18 +1,19 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Geometry {
 public sealed class Segment {
-    public Vector3 p0;
-    public Vector3 p1;
+    public Nullable<Vector3> p0;
+    public Nullable<Vector3> p1;
 
-    public Segment(Vector3 p0, Vector3 p1) {
+    public Segment(Nullable<Vector3> p0, Nullable<Vector3> p1) {
         this.p0 = p0;
         this.p1 = p1;
     }
 
     public static int CompareLengthsMax(Segment s0, Segment s1) {
-        float length0 = Vector3.Distance(s0.p0, s0.p1);
-        float length1 = Vector3.Distance(s1.p0, s1.p1);
+        float length0 = Vector3.Distance((Vector3)s0.p0, (Vector3)s0.p1);
+        float length1 = Vector3.Distance((Vector3)s1.p0, (Vector3)s1.p1);
 
         if (length0 < length1) {
             return 1;
