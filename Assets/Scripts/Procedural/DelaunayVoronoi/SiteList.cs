@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using Geometry;
 using UnityEngine;
@@ -59,7 +58,7 @@ public sealed class SiteList {
             return new Rect(0, 0, 0, 0);
         }
         
-        float xMin, xMax, zMin, zMax;
+        float xMin, xMax, yMin, yMax;
         xMin = float.MaxValue;
         xMax = float.MinValue;
         for (int i = 0; i < sites_.Count; i++) {
@@ -73,10 +72,10 @@ public sealed class SiteList {
             }
         }
 
-        zMin = sites_[0].Z;
-        zMax = sites_[sites_.Count - 1].Z;
+        yMin = sites_[0].Y;
+        yMax = sites_[sites_.Count - 1].Y;
         
-        return new Rect(xMin, zMin, xMax - xMin, zMax - zMin);
+        return new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
     }
 
     public List<uint> SiteColor() {
@@ -90,8 +89,8 @@ public sealed class SiteList {
         return colors;
     }
 
-    public List<Vector3> SitePositions() {
-        List<Vector3> positions = new List<Vector3>();
+    public List<Vector2> SitePositions() {
+        List<Vector2> positions = new List<Vector2>();
 
         Site site;
         for (int i = 0; i < sites_.Count; i++) {
@@ -115,14 +114,14 @@ public sealed class SiteList {
                 radius = nearestEdge.SitesDistance() * 0.5f;
             }
             
-            circles.Add(new Circle(site.X, site.Z, radius));
+            circles.Add(new Circle(site.X, site.Y, radius));
         }
 
         return circles;
     }
 
-    public List<List<Vector3>> Regions(Rect plotBounds) {
-        List<List<Vector3>> regions = new List<List<Vector3>>();
+    public List<List<Vector2>> Regions(Rect plotBounds) {
+        List<List<Vector2>> regions = new List<List<Vector2>>();
 
         Site site;
         for (int i = 0; i < sites_.Count; i++) {
@@ -133,7 +132,7 @@ public sealed class SiteList {
         return regions;
     }
 
-    public Nullable<Vector3> NearestSitePoint(float x, float y) {
+    public Nullable<Vector2> NearestSitePoint(float x, float y) {
         return null;
     }
 }

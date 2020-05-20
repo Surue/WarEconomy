@@ -8,38 +8,38 @@ public class Site : IComparable
 {
     static Stack<Site> pool_ = new Stack<Site>();
 
-    Vector3 position_;
+    Vector2 position_;
 
-    public Vector3 Position => position_;
+    public Vector2 Position => position_;
 
     public float X => position_.x;
 
-    public float Z => position_.z;
+    public float Y => position_.y;
 
     public uint color;
     public float weight;
-    int siteIndex_;
+    uint siteIndex_;
     List<Edge> edges_;
 
     internal List<Edge> Edges => edges_;
 
     List<Side> edgeOrientations_;
-    List<Vector3> region_;
+    List<Vector2> region_;
 
-    Site(Vector3 p, int index, float weight, uint color) {
+    Site(Vector2 p, uint index, float weight, uint color) {
         Init(p, index, weight, color);
     }
 
-    public static Site Create(Vector3 p, int index, float weight, uint color) {
-        if (pool_.Count > 0) {
+    public static Site Create(Vector2 p, uint index, float weight, uint color) {
+	    if (pool_.Count > 0) {
             return pool_.Pop().Init(p, index, weight, color);
                 
-        } else{
-            return new Site(p, index, weight, color);
         }
+
+	    return new Site(p, index, weight, color);
     }
 
-    Site Init(Vector3 p, int index, float weight, uint color) {
+    Site Init(Vector2 p, uint index, float weight, uint color) {
         position_ = p;
         siteIndex_ = index;
         this.weight = weight;
@@ -54,40 +54,42 @@ public class Site : IComparable
         sites.Sort();
     }
 
-    public int CompareTo(System.Object obj) {
-        Site s2 = (Site) obj;
+    public int CompareTo(object obj) {
+	    Site s2 = (Site)obj;
 
-        int returnValue = Voronoi.CompareByZThenX(this, s2);
-
-        int tmpIndex;
-        if (returnValue == -1) {
-            if (siteIndex_ > s2.siteIndex_) {
-                tmpIndex = siteIndex_;
-                siteIndex_ = s2.siteIndex_;
-                s2.siteIndex_ = tmpIndex;
-            }
-        }else if (returnValue == 1) {
-            if (s2.siteIndex_ > siteIndex_) {
-                tmpIndex = s2.siteIndex_;
-                s2.siteIndex_ = siteIndex_;
-                siteIndex_ = tmpIndex;
-            }
-        }
-
-        return returnValue;
+	    int returnValue = Voronoi.CompareByYThenX (this, s2);
+			
+	    // swap _siteIndex values if necessary to match new ordering:
+	    uint tempIndex;
+	    if (returnValue == -1) {
+		    if (siteIndex_ > s2.siteIndex_) {
+			    tempIndex = siteIndex_;
+			    siteIndex_ = s2.siteIndex_;
+			    s2.siteIndex_ = tempIndex;
+		    }
+	    } else if (returnValue == 1) {
+		    if (s2.siteIndex_ > siteIndex_) {
+			    tempIndex = s2.siteIndex_;
+			    s2.siteIndex_ = siteIndex_;
+			    siteIndex_ = tempIndex;
+		    }
+				
+	    }
+			
+	    return returnValue;
     }
 
     static readonly float EPSILON = 0.005f;
 
-    static bool CloseEngough(Vector3 p0, Vector3 p1) {
-        return Vector3.Distance(p0, p1) < EPSILON;
+    static bool CloseEnough(Vector2 p0, Vector2 p1) {
+        return Vector2.Distance(p0, p1) < EPSILON;
     }
 
     public override string ToString() {
         return "Site[" + siteIndex_ + "] (position = " + position_ + ")";
     }
 
-    void Move(Vector3 p) {
+    void Move(Vector2 p) {
         Clear();
         position_ = p;
     }
@@ -155,9 +157,9 @@ public class Site : IComparable
         return null;
     }
 
-    internal List<Vector3> Region(Rect clippingBounds) {
+    internal List<Vector2> Region(Rect clippingBounds) {
         if (edges_ == null || edges_.Count == 0) {
-            return new List<Vector3>();
+            return new List<Vector2>();
         }
 
         if (edgeOrientations_ == null) {
@@ -165,7 +167,7 @@ public class Site : IComparable
 
             region_ = ClipToBounds(clippingBounds);
 
-            if ((new Polygon(region_)).IsClockwise()) {
+            if ((new Polygon2D(region_)).IsClockwise()) {
                 region_.Reverse();
             }
         }
@@ -181,158 +183,144 @@ public class Site : IComparable
         reorderer.Dispose();
     }
 
-    List<Vector3> ClipToBounds(Rect bounds) {
-        List<Vector3> points = new List<Vector3>();
+    List<Vector2> ClipToBounds(Rect bounds) {
+        List<Vector2> points = new List<Vector2> ();
         int n = edges_.Count;
         int i = 0;
         Edge edge;
-
         while (i < n && (edges_[i].Visible == false)) {
             ++i;
         }
-
+			
         if (i == n) {
-            return new List<Vector3>();
+            // no edges visible
+            return new List<Vector2> ();
         }
-
         edge = edges_[i];
         Side orientation = edgeOrientations_[i];
 
-        if (edge.clippedEnds[orientation] == null) {
-            Debug.LogError("Null detected when ther should be a Vector3");
+        if (edge.clippedEnds [orientation] == null) {
+            Debug.LogError ("XXX: Null detected when there should be a Vector2!");
         }
-
-        if (edge.clippedEnds[SideHelper.Other(orientation)] == null) {
-            Debug.LogError("Null detected when ther should be a Vector3");
+        if (edge.clippedEnds [SideHelper.Other (orientation)] == null) {
+            Debug.LogError ("XXX: Null detected when there should be a Vector2!");
         }
-        
-        points.Add((Vector3)edge.clippedEnds[orientation]);
-        points.Add((Vector3)edge.clippedEnds[SideHelper.Other(orientation)]);
-
+        points.Add ((Vector2)edge.clippedEnds [orientation]);
+        points.Add ((Vector2)edge.clippedEnds [SideHelper.Other (orientation)]);
+			
         for (int j = i + 1; j < n; ++j) {
             edge = edges_[j];
-
             if (edge.Visible == false) {
                 continue;
             }
-
-            Connect(points, j, bounds);
+            Connect (points, j, bounds);
         }
-
-        Connect(points, i, bounds, true);
-
+        
+        Connect (points, i, bounds, true);
+			
         return points;
     }
 
-    void Connect(List<Vector3> points, int j, Rect bounds, bool closingUp = false) {
-        Vector3 rightPoint = points[points.Count - 1];
-        Edge newEdge = edges_[j];
-        Side newOrientation = edgeOrientations_[j];
-
-        if (newEdge.clippedEnds[newOrientation] == null) {
-            Debug.LogError("Null detected when there should be a Vector3");
-        }
-
-        Vector3 newPoint = (Vector3) newEdge.clippedEnds[newOrientation];
-
-        if (!CloseEngough(rightPoint, newPoint)) {
-            if (rightPoint.x != newPoint.x && rightPoint.z != newPoint.z) {
-                int rightCheck = BoundsCheck.Check(rightPoint, bounds);
-                int newCheck = BoundsCheck.Check(newPoint, bounds);
-
-                float posX, posZ;
-                if ((rightCheck & BoundsCheck.RIGHT) != 0) {
-                    posX = bounds.xMax;
-                    if ((newCheck & BoundsCheck.BOTTOM) != 0) {
-                        posZ = bounds.yMax;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    } else if((newCheck & BoundsCheck.TOP) != 0) {
-                        posZ = bounds.yMin;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    }else if ((newCheck & BoundsCheck.LEFT) != 0) {
-                        if (rightPoint.z - bounds.y + newPoint.z - bounds.y < bounds.height) {
-                            posZ = bounds.yMin;
-                        } else {
-                            posZ = bounds.yMax;
-                        }
-                        
-                        points.Add(new Vector3(posX, 0, posZ));
-                        points.Add(new Vector3(bounds.xMin, 0, posZ));
-                    }
-                } else if ((rightCheck & BoundsCheck.LEFT) != 0) {
-                    posX = bounds.xMin;
-                    if ((newCheck & BoundsCheck.BOTTOM) != 0) {
-                        posZ = bounds.yMax;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    } else if((newCheck & BoundsCheck.TOP) != 0) {
-                        posZ = bounds.yMin;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    }else if ((newCheck & BoundsCheck.LEFT) != 0) {
-                        if (rightPoint.z - bounds.y + newPoint.z - bounds.y < bounds.height) {
-                            posZ = bounds.yMin;
-                        } else {
-                            posZ = bounds.yMax;
-                        }
-                        
-                        points.Add(new Vector3(posX, 0, posZ));
-                        points.Add(new Vector3(bounds.xMax, 0, posZ));
-                    }
-                } else if ((rightCheck & BoundsCheck.TOP) != 0) {
-                    posZ = bounds.yMin;
-                    if ((newCheck & BoundsCheck.RIGHT) != 0) {
-                        posX = bounds.xMax;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    } else if((newCheck & BoundsCheck.LEFT) != 0) {
-                        posX = bounds.xMin;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    }else if ((newCheck & BoundsCheck.BOTTOM) != 0) {
-                        if (rightPoint.x - bounds.x + newPoint.x - bounds.x < bounds.height) {
-                            posX = bounds.xMin;
-                        } else {
-                            posX = bounds.xMax;
-                        }
-                        
-                        points.Add(new Vector3(posX, 0, posZ));
-                        points.Add(new Vector3(posX, 0, bounds.yMax));
-                    }
-                } else if ((rightCheck & BoundsCheck.BOTTOM) != 0) {
-                    posZ = bounds.yMax;
-                    if ((newCheck & BoundsCheck.RIGHT) != 0) {
-                        posX = bounds.xMax;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    } else if((newCheck & BoundsCheck.LEFT) != 0) {
-                        posX = bounds.xMin;
-                        points.Add(new Vector3(posX, 0, posZ));
-                    }else if ((newCheck & BoundsCheck.TOP) != 0) {
-                        if (rightPoint.x - bounds.x + newPoint.x - bounds.x < bounds.height) {
-                            posX = bounds.xMin;
-                        } else {
-                            posX = bounds.xMax;
-                        }
-                        
-                        points.Add(new Vector3(posX, 0, posZ));
-                        points.Add(new Vector3(posX, 0, bounds.yMin));
-                    }
-                }
-            }
-            if (closingUp) {
-                return;
-            }
-            points.Add(newPoint);
-        }
-
-        if (newEdge.clippedEnds[SideHelper.Other(newOrientation)] == null) {
-            Debug.LogError("Null detected when there shuold be a Vector3");
-        }
-
-        Vector3 newRightPoint = (Vector3) newEdge.clippedEnds[SideHelper.Other(newOrientation)];
-        if (!CloseEngough(points[0], newRightPoint)) {
-            points.Add(newRightPoint);
-        }
+    void Connect(List<Vector2> points, int j, Rect bounds, bool closingUp = false) {
+        Vector2 rightPoint = points [points.Count - 1];
+			Edge newEdge = edges_[j];
+			Side newOrientation = edgeOrientations_[j];
+			if (newEdge.clippedEnds [newOrientation] == null) {
+				Debug.LogError ("XXX: Null detected when there should be a Vector2!");
+			}
+			Vector2 newPoint = (Vector2)newEdge.clippedEnds [newOrientation];
+			if (!CloseEnough (rightPoint, newPoint)) {
+				if (rightPoint.x != newPoint.x
+					&& rightPoint.y != newPoint.y) {
+					int rightCheck = BoundsCheck.Check (rightPoint, bounds);
+					int newCheck = BoundsCheck.Check (newPoint, bounds);
+					float px, py;
+					if ((rightCheck & BoundsCheck.RIGHT) != 0) {
+						px = bounds.xMax;
+						if ((newCheck & BoundsCheck.BOTTOM) != 0) {
+							py = bounds.yMax;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.TOP) != 0) {
+							py = bounds.yMin;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.LEFT) != 0) {
+							if (rightPoint.y - bounds.y + newPoint.y - bounds.y < bounds.height) {
+								py = bounds.yMin;
+							} else {
+								py = bounds.yMax;
+							}
+							points.Add (new Vector2 (px, py));
+							points.Add (new Vector2 (bounds.xMin, py));
+						}
+					} else if ((rightCheck & BoundsCheck.LEFT) != 0) {
+						px = bounds.xMin;
+						if ((newCheck & BoundsCheck.BOTTOM) != 0) {
+							py = bounds.yMax;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.TOP) != 0) {
+							py = bounds.yMin;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.RIGHT) != 0) {
+							if (rightPoint.y - bounds.y + newPoint.y - bounds.y < bounds.height) {
+								py = bounds.yMin;
+							} else {
+								py = bounds.yMax;
+							}
+							points.Add (new Vector2 (px, py));
+							points.Add (new Vector2 (bounds.xMax, py));
+						}
+					} else if ((rightCheck & BoundsCheck.TOP) != 0) {
+						py = bounds.yMin;
+						if ((newCheck & BoundsCheck.RIGHT) != 0) {
+							px = bounds.xMax;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.LEFT) != 0) {
+							px = bounds.xMin;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.BOTTOM) != 0) {
+							if (rightPoint.x - bounds.x + newPoint.x - bounds.x < bounds.width) {
+								px = bounds.xMin;
+							} else {
+								px = bounds.xMax;
+							}
+							points.Add (new Vector2 (px, py));
+							points.Add (new Vector2 (px, bounds.yMax));
+						}
+					} else if ((rightCheck & BoundsCheck.BOTTOM) != 0) {
+						py = bounds.yMax;
+						if ((newCheck & BoundsCheck.RIGHT) != 0) {
+							px = bounds.xMax;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.LEFT) != 0) {
+							px = bounds.xMin;
+							points.Add (new Vector2 (px, py));
+						} else if ((newCheck & BoundsCheck.TOP) != 0) {
+							if (rightPoint.x - bounds.x + newPoint.x - bounds.x < bounds.width) {
+								px = bounds.xMin;
+							} else {
+								px = bounds.xMax;
+							}
+							points.Add (new Vector2 (px, py));
+							points.Add (new Vector2 (px, bounds.yMin));
+						}
+					}
+				}
+				if (closingUp) {
+					return;
+				}
+				points.Add (newPoint);
+			}
+			if (newEdge.clippedEnds [SideHelper.Other (newOrientation)] == null) {
+				Debug.LogError ("XXX: Null detected when there should be a Vector2!");
+			}
+			Vector2 newRightPoint = (Vector2)newEdge.clippedEnds [SideHelper.Other (newOrientation)];
+			if (!CloseEnough(points [0], newRightPoint)) {
+				points.Add (newRightPoint);
+			}
     }
 
-    public float Dist(Vector3 p) {
-        return Vector3.Distance(p, position_);
+    public float Dist(Vector2 p) {
+        return Vector2.Distance(p, position_);
     }
 }
 
@@ -342,7 +330,7 @@ static class BoundsCheck {
     public static readonly int LEFT = 4;
     public static readonly int RIGHT = 8;
 
-    public static int Check(Vector3 point, Rect bounds) {
+    public static int Check(Vector2 point, Rect bounds) {
         int value = 0;
         if (point.x == bounds.xMin) {
             value |= LEFT;
@@ -352,11 +340,11 @@ static class BoundsCheck {
             value |= RIGHT;
         }
         
-        if (point.z == bounds.yMin) {
+        if (point.y == bounds.yMin) {
             value |= TOP;
         }
         
-        if (point.z == bounds.yMax) {
+        if (point.y == bounds.yMax) {
             value |= BOTTOM;
         }
 

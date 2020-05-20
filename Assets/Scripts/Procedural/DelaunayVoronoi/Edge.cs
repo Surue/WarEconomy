@@ -10,12 +10,12 @@ public sealed class Edge {
     public float a, b, c;
 
     static int nbEdges_ = 0;
-    
+
     public static readonly Edge DELETED = new Edge();
 
-    Dictionary<Side, Nullable<Vector3>> clippedVertices_;
+    Dictionary<Side, Nullable<Vector2>> clippedVertices_;
 
-    public Dictionary<Side, Nullable<Vector3>> clippedEnds => clippedVertices_;
+    public Dictionary<Side, Nullable<Vector2>> clippedEnds => clippedVertices_;
 
     Dictionary<Side, Site> sites_;
 
@@ -23,7 +23,7 @@ public sealed class Edge {
         get => sites_[Side.LEFT];
         set => sites_[Side.LEFT] = value;
     }
-    
+
     public Site RightSite {
         get => sites_[Side.RIGHT];
         set => sites_[Side.RIGHT] = value;
@@ -39,32 +39,28 @@ public sealed class Edge {
     public Vertex LeftVertex => leftVertex_;
 
     public static Edge CreateBisectingEdge(Site site0, Site site1) {
-        float dx, dz, absDx, absDy;
+        float dx, dy, absdx, absdy;
         float a, b, c;
 
         dx = site1.X - site0.X;
-        dz = site1.Z - site0.Z;
-
-        absDx = dx > 0 ? dx : -dx;
-        absDy = dz > 0 ? dz : -dz;
-
-        c = site0.X * dx + site0.Z * dz + (dz * dz + dz * dz) * 0.5f;
-
-        if (absDx > absDy) {
+        dy = site1.Y - site0.Y;
+        absdx = dx > 0 ? dx : -dx;
+        absdy = dy > 0 ? dy : -dy;
+        c = site0.X * dx + site0.Y * dy + (dx * dx + dy * dy) * 0.5f;
+        if (absdx > absdy) {
             a = 1.0f;
-            b = dz / dx;
+            b = dy / dx;
             c /= dx;
         } else {
             b = 1.0f;
-            a = dx / dz;
-            c /= dz;
+            a = dx / dy;
+            c /= dy;
         }
 
-        Edge edge = Edge.Create();
+        Edge edge = Create();
 
         edge.LeftSite = site0;
         edge.RightSite = site1;
-
         site0.AddEdge(edge);
         site1.AddEdge(edge);
 
@@ -99,7 +95,7 @@ public sealed class Edge {
         if (!Visible) {
             return new Segment(null, null);
         }
-        
+
         return new Segment(clippedVertices_[Side.LEFT], clippedVertices_[Side.RIGHT]);
     }
 
@@ -120,7 +116,7 @@ public sealed class Edge {
     }
 
     public float SitesDistance() {
-        return Vector3.Distance(LeftSite.Position, RightSite.Position);
+        return Vector2.Distance(LeftSite.Position, RightSite.Position);
     }
 
     public static int CompareSitesDistanceMax(Edge edge0, Edge edge1) {
@@ -160,7 +156,7 @@ public sealed class Edge {
         sites_[Side.LEFT] = null;
         sites_[Side.RIGHT] = null;
         sites_ = null;
-        
+
         pool_.Push(this);
     }
 
@@ -174,21 +170,22 @@ public sealed class Edge {
     }
 
     public override string ToString() {
-        return "Edge " + edgeIndex_.ToString () + "; sites " + sites_ [Side.LEFT].ToString () + ", " + sites_ [Side.RIGHT].ToString ()
-               + "; endVertices " + ((leftVertex_ != null) ? leftVertex_.VertexIndex.ToString () : "null") + ", "
-               + ((rightVertex_ != null) ? rightVertex_.VertexIndex.ToString () : "null") + "::";
+        return "Edge " + edgeIndex_.ToString() + "; sites " + sites_[Side.LEFT].ToString() + ", " +
+               sites_[Side.RIGHT].ToString()
+               + "; endVertices " + ((leftVertex_ != null) ? leftVertex_.VertexIndex.ToString() : "null") + ", "
+               + ((rightVertex_ != null) ? rightVertex_.VertexIndex.ToString() : "null") + "::";
     }
 
     public void ClipVertices(Rect bounds) {
-        float xMin = bounds.xMin;
-        float zMin = bounds.yMin;
-        float xMax = bounds.xMax;
-        float zMax = bounds.yMax;
+        float xmin = bounds.xMin;
+        float ymin = bounds.yMin;
+        float xmax = bounds.xMax;
+        float ymax = bounds.yMax;
 
         Vertex vertex0, vertex1;
-        float x0, x1, z0, z1;
+        float x0, x1, y0, y1;
 
-        if (a == 1.0f && b >= 0.0f) {
+        if (a == 1.0 && b >= 0.0) {
             vertex0 = rightVertex_;
             vertex1 = leftVertex_;
         } else {
@@ -197,98 +194,98 @@ public sealed class Edge {
         }
 
         if (a == 1.0) {
-            z0 = zMin;
-            if (vertex0 != null && vertex0.Z > zMin) {
-                z0 = vertex0.Z;
+            y0 = ymin;
+            if (vertex0 != null && vertex0.Y > ymin) {
+                y0 = vertex0.Y;
             }
 
-            if (z0 > zMax) {
+            if (y0 > ymax) {
                 return;
             }
 
-            x0 = c - b * z0;
+            x0 = c - b * y0;
 
-            z1 = zMax;
-            if (vertex1 != null && vertex1.Z < zMax) {
-                z1 = vertex1.Z;
+            y1 = ymax;
+            if (vertex1 != null && vertex1.Y < ymax) {
+                y1 = vertex1.Y;
             }
 
-            if (z1 < zMin) {
+            if (y1 < ymin) {
                 return;
             }
 
-            x1 = c - b * z1;
+            x1 = c - b * y1;
 
-            if ((x0 > xMax && x1 > xMax) || (x0 < xMin && x1 < xMin)) {
+            if ((x0 > xmax && x1 > xmax) || (x0 < xmin && x1 < xmin)) {
                 return;
             }
 
-            if (x0 > xMax) {
-                x0 = xMax;
-                z0 = (c - x0) / b;
-            } else if (x0 < xMin) {
-                x0 = xMin;
-                z0 = (c - x0) / b;
+            if (x0 > xmax) {
+                x0 = xmax;
+                y0 = (c - x0) / b;
+            } else if (x0 < xmin) {
+                x0 = xmin;
+                y0 = (c - x0) / b;
             }
 
-            if (x1 > xMax) {
-                x1 = xMax;
-                z1 = (c - x1) / b;
-            }else if (x1 < xMin) {
-                x1 = xMin;
-                z1 = (c - x1) / b;
+            if (x1 > xmax) {
+                x1 = xmax;
+                y1 = (c - x1) / b;
+            } else if (x1 < xmin) {
+                x1 = xmin;
+                y1 = (c - x1) / b;
             }
         } else {
-            x0 = xMin;
-            if (vertex0 != null && vertex0.X > xMin) {
+            x0 = xmin;
+            if (vertex0 != null && vertex0.X > xmin) {
                 x0 = vertex0.X;
             }
 
-            if (x0 > xMax) {
+            if (x0 > xmax) {
                 return;
             }
 
-            z0 = c - a * x0;
+            y0 = c - a * x0;
 
-            x1 = xMax;
-            if (vertex1 != null && vertex1.X < xMax) {
+            x1 = xmax;
+            if (vertex1 != null && vertex1.X < xmax) {
                 x1 = vertex1.X;
             }
 
-            if (x1 < xMin) {
+            if (x1 < xmin) {
                 return;
             }
 
-            z1 = c - a * x1;
+            y1 = c - a * x1;
 
-            if ((z0 > zMax && z1 > zMax) || (z0 < zMin && z1 <zMin)) {
+            if ((y0 > ymax && y1 > ymax) || (y0 < ymin && y1 < ymin)) {
                 return;
             }
 
-            if (z0 > zMax) {
-                z0 = zMax;
-                x0 = (c - z0) / a;
-            } else if (z0 < zMin) {
-                z0 = zMin;
-                x0 = (c - z0) / a;
+            if (y0 > ymax) {
+                y0 = ymax;
+                x0 = (c - y0) / a;
+            } else if (y0 < ymin) {
+                y0 = ymin;
+                x0 = (c - y0) / a;
             }
 
-            if (z1 > zMax) {
-                z1 = zMax;
-                x1 = (c - z1) / a;
-            }else if (z1 < zMin) {
-                z1 = zMin;
-                x1 = (c - z1) / a;
+            if (y1 > ymax) {
+                y1 = ymax;
+                x1 = (c - y1) / a;
+            } else if (y1 < ymin) {
+                y1 = ymin;
+                x1 = (c - y1) / a;
             }
         }
         
-        clippedVertices_ = new Dictionary<Side, Nullable<Vector3>>();
+        clippedVertices_ = new Dictionary<Side, Nullable<Vector2>>();
         if (vertex0 == leftVertex_) {
-            clippedVertices_[Side.LEFT] = new Vector3(x0, 0, z0);
-            clippedVertices_[Side.RIGHT] = new Vector3(x1, 0, z1);
+            clippedVertices_[Side.LEFT] = new Vector2(x0, y0);
+            clippedVertices_[Side.RIGHT] = new Vector2(x1, y1);
         } else {
-            clippedVertices_[Side.RIGHT] = new Vector3(x0, 0, z0);
-            clippedVertices_[Side.LEFT] = new Vector3(x1, 0, z1);
+            clippedVertices_[Side.RIGHT] = new Vector2(x0, y0);
+            clippedVertices_[Side.LEFT] = new Vector2(x1, y1);
         }
     }
 }

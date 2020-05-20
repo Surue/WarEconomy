@@ -2,10 +2,10 @@
 using UnityEngine;
 
 namespace Geometry {
-public sealed class Polygon {
-    public List<Vector3> vertices;
+public sealed class Polygon2D {
+    public List<Vector2> vertices;
 
-    public Polygon(List<Vector3> vertices) {
+    public Polygon2D(List<Vector2> vertices) {
         this.vertices = vertices;
     }
 
@@ -16,8 +16,8 @@ public sealed class Polygon {
         
         for (index = 0; index < n; ++index) {
             int nextIndex = (index + 1) % n;
-            Vector3 point = vertices [index];
-            Vector3 next = vertices [nextIndex];
+            Vector2 point = vertices [index];
+            Vector2 next = vertices [nextIndex];
             signedDoubleArea += point.x * next.y - next.x * point.y;
         }
         

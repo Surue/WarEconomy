@@ -13,7 +13,7 @@ public sealed class Halfedge {
     public Nullable<Side> leftRight;
     public Vertex vertex;
 
-    public float zStar;
+    public float yStar;
 
     public Halfedge(Edge edge = null, Nullable<Side> leftRight = null) {
         Init(edge, leftRight);
@@ -65,56 +65,51 @@ public sealed class Halfedge {
         Dispose();
     }
 
-    internal bool IsLeftOf(Vector3 pos) {
+    internal bool IsLeftOf(Vector2 pos) {
         Site topSite;
         bool rightOfSite, above, fast;
-        float dxp, dzp, dxs, t1, t2, t3, y1;
-
+        float dxp, dyp, dxs, t1, t2, t3, yl;
+			
         topSite = edge.RightSite;
         rightOfSite = pos.x > topSite.X;
-
         if (rightOfSite && leftRight == Side.LEFT) {
             return true;
         }
-
         if (!rightOfSite && leftRight == Side.RIGHT) {
             return false;
         }
-
-        if (edge.a == 1.0f) {
-            dzp = pos.z - topSite.Z;
+			
+        if (edge.a == 1.0) {
+            dyp = pos.y - topSite.Y;
             dxp = pos.x - topSite.X;
-
             fast = false;
-            if ((!rightOfSite && edge.b < 0.0f) || (rightOfSite && edge.b >= 0.0f)) {
-                above = dzp >= edge.b * dxp;
+            if ((!rightOfSite && edge.b < 0.0) || (rightOfSite && edge.b >= 0.0)) {
+                above = dyp >= edge.b * dxp;	
                 fast = above;
             } else {
-                above = pos.x + pos.z * edge.b > edge.c;
+                above = pos.x + pos.y * edge.b > edge.c;
                 if (edge.b < 0.0) {
                     above = !above;
                 }
-
                 if (!above) {
                     fast = true;
                 }
             }
-
             if (!fast) {
                 dxs = topSite.X - edge.LeftSite.X;
-                above = edge.b * (dxp * dxp - dzp * dzp) < dxs * dzp * (1.0 + 2.0 * dxp / dxs + edge.b * edge.b);
+                above = edge.b * (dxp * dxp - dyp * dyp) <
+                        dxs * dyp * (1.0 + 2.0 * dxp / dxs + edge.b * edge.b);
                 if (edge.b < 0.0) {
                     above = !above;
                 }
             }
-        } else {
-            y1 = edge.c - edge.a * pos.x;
-            t1 = pos.z - y1;
+        } else {  /* edge.b == 1.0 */
+            yl = edge.c - edge.a * pos.x;
+            t1 = pos.y - yl;
             t2 = pos.x - topSite.X;
-            t3 = y1 - topSite.Z;
+            t3 = yl - topSite.Y;
             above = t1 * t1 > t2 * t2 + t3 * t3;
         }
-
         return leftRight == Side.LEFT ? above : !above;
     }
 }

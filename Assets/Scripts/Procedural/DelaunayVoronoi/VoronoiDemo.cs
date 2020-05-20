@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Geometry;
 using Procedural;
 using UnityEngine;
@@ -9,7 +7,7 @@ using Random = UnityEngine.Random;
 public class VoronoiDemo : MonoBehaviour {
     [SerializeField] int pointCount_ = 300;
 
-    List<Vector3> points_;
+    List<Vector2> points_;
     float mapWidth_ = 100;
     float mapHeight_ = 50;
     List<Segment> edges_ = null;
@@ -29,11 +27,11 @@ public class VoronoiDemo : MonoBehaviour {
     void Demo() {
         List<uint> colors = new List<uint>();
         
-        points_ = new List<Vector3>();
+        points_ = new List<Vector2>();
 
         for (int i = 0; i < pointCount_; i++) {
             colors.Add(0);
-            points_.Add(new Vector3(Random.Range(0, mapWidth_), 0, Random.Range(0, mapHeight_)));
+            points_.Add(new Vector2(Random.Range(0, mapWidth_), Random.Range(0, mapHeight_)));
         }
 
         Voronoi voronoi = new Voronoi(points_, colors, new Rect(0, 0, mapWidth_, mapHeight_));
@@ -54,8 +52,8 @@ public class VoronoiDemo : MonoBehaviour {
         if (edges_ != null) {
             Gizmos.color = Color.white;
             for (int i = 0; i < edges_.Count; i++) {
-                Vector3 left = (Vector3)edges_[i].p0;
-                Vector3 right = (Vector3)edges_[i].p1;
+                Vector2 left = (Vector2)edges_[i].p0;
+                Vector2 right = (Vector2)edges_[i].p1;
                 
                 Gizmos.DrawLine(left, right);
             }
@@ -64,8 +62,8 @@ public class VoronoiDemo : MonoBehaviour {
         Gizmos.color = Color.magenta;
         if (delaunayTriangulation_ != null) {
             for (int i = 0; i < delaunayTriangulation_.Count; i++) {
-                Vector3 left = (Vector3)delaunayTriangulation_[i].p0;
-                Vector3 right = (Vector3)delaunayTriangulation_[i].p1;
+                Vector2 left = (Vector2)delaunayTriangulation_[i].p0;
+                Vector2 right = (Vector2)delaunayTriangulation_[i].p1;
                 
                 Gizmos.DrawLine(left, right);
             }
@@ -76,17 +74,17 @@ public class VoronoiDemo : MonoBehaviour {
             for (int i = 0; i < spanningTree_.Count; i++) {
                 Segment segment = spanningTree_[i];
                 
-                Vector3 left = (Vector3)segment.p0;
-                Vector3 right = (Vector3)segment.p1;
+                Vector2 left = (Vector2)segment.p0;
+                Vector2 right = (Vector2)segment.p1;
                 
                 Gizmos.DrawLine(left, right);
             }
         }
 
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(new Vector3(0, 0, 0), new Vector3(0, 0, mapHeight_) );
-        Gizmos.DrawLine(new Vector3(0, 0, 0), new Vector3(mapWidth_, 0, 0) );
-        Gizmos.DrawLine(new Vector3(mapWidth_, 0, 0), new Vector3(mapWidth_, 0, mapHeight_) );
-        Gizmos.DrawLine(new Vector3(0, 0, mapHeight_), new Vector3(mapWidth_, 0, mapHeight_) );
+        Gizmos.DrawLine(new Vector2(0, 0), new Vector2(0, mapHeight_) );
+        Gizmos.DrawLine(new Vector2(0, 0), new Vector2(mapWidth_, 0) );
+        Gizmos.DrawLine(new Vector2(mapWidth_, 0), new Vector2(mapWidth_, mapHeight_) );
+        Gizmos.DrawLine(new Vector2(0, mapHeight_), new Vector2(mapWidth_, mapHeight_) );
     }
 }

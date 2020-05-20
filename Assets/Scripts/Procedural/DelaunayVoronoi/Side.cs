@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace Procedural {
+﻿namespace Procedural {
 
 public enum Side {
     LEFT = 0,

@@ -18,23 +18,21 @@ public enum KruskalType {
 
 public static class DelaunayHelper {
     public static List<Segment> VisibleLineSegments(List<Edge> edges) {
-        List<Segment> segments = new List<Segment>();
-
+        List<Segment> segments = new List<Segment> ();
+			
         for (int i = 0; i < edges.Count; i++) {
-            Edge edge = edges[i];
-
+            Edge edge = edges [i];
             if (edge.Visible) {
-                Nullable<Vector3> p1 = edge.clippedEnds[Side.LEFT];
-                Nullable<Vector3> p2 = edge.clippedEnds[Side.RIGHT];
-                
-                segments.Add(new Segment(p1, p2));
+                Nullable<Vector2> p1 = edge.clippedEnds[Side.LEFT];
+                Nullable<Vector2> p2 = edge.clippedEnds[Side.RIGHT];
+                segments.Add (new Segment(p1, p2));
             }
         }
-
+			
         return segments;
     }
 
-    public static List<Edge> SelectEdgesForSitePoint(Vector3 pos, List<Edge> edgesToTest) {
+    public static List<Edge> SelectEdgesForSitePoint(Vector2 pos, List<Edge> edgesToTest) {
         return edgesToTest.FindAll(edge => edge.LeftSite != null && edge.LeftSite.Position == pos ||
                                            edge.RightSite != null && edge.RightSite.Position == pos);
     }
@@ -56,7 +54,7 @@ public static class DelaunayHelper {
     }
 
     public static List<Segment> Kruksal(List<Segment> segments, KruskalType type = KruskalType.MINIMUM) {
-        Dictionary<Nullable<Vector3>, Node> nodes = new Dictionary<Nullable<Vector3>, Node>();
+        Dictionary<Nullable<Vector2>, Node> nodes = new Dictionary<Nullable<Vector2>, Node>();
         List<Segment> mst = new List<Segment>();
         Stack<Node> nodePool = Node.pool;
 

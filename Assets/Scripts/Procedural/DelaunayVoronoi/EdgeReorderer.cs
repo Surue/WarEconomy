@@ -32,25 +32,24 @@ sealed class EdgeReorderer {
     List<Edge> ReorderEdges(List<Edge> edges, VertexOrSite criteria) {
         int i;
         int n = edges.Count;
-
         Edge edge;
+        // we're going to reorder the edges in order of traversal
         bool[] done = new bool[n];
         int nDone = 0;
         for (int j = 0; j < n; j++) {
             done[j] = false;
         }
-        
+
         List<Edge> newEdges = new List<Edge>();
 
         i = 0;
         edge = edges[i];
         newEdges.Add(edge);
         edgeOrientation_.Add(Side.LEFT);
+        Vector2 firstPoint = (criteria == VertexOrSite.VERTEX) ? edge.LeftVertex.Position : edge.LeftSite.Position;
+        Vector2 lastPoint = (criteria == VertexOrSite.VERTEX) ? edge.RightVertex.Position : edge.RightSite.Position;
 
-        Vector3 firstPoint = (criteria == VertexOrSite.VERTEX) ? (Vector3)edge.LeftVertex.Position : edge.LeftSite.Position;
-        Vector3 lastPoint = (criteria == VertexOrSite.VERTEX) ? (Vector3)edge.RightVertex.Position : edge.RightSite.Position;
-
-        if (firstPoint == (Vector3)Vertex.VERTEX_AT_INFINITY.Position || lastPoint == (Vector3)Vertex.VERTEX_AT_INFINITY.Position) {
+        if (firstPoint == Vertex.VERTEX_AT_INFINITY.Position || lastPoint == Vertex.VERTEX_AT_INFINITY.Position) {
             return new List<Edge>();
         }
 
@@ -64,11 +63,14 @@ sealed class EdgeReorderer {
                 }
 
                 edge = edges[i];
-                
-                Vector3 leftPoint = (criteria == VertexOrSite.VERTEX) ? (Vector3)edge.LeftVertex.Position : edge.LeftSite.Position;
-                Vector3 rightPoint = (criteria == VertexOrSite.VERTEX) ? (Vector3)edge.RightVertex.Position : edge.RightSite.Position;
-
-                if (firstPoint == (Vector3)Vertex.VERTEX_AT_INFINITY.Position || lastPoint == (Vector3)Vertex.VERTEX_AT_INFINITY.Position) {
+                Vector2 leftPoint = (criteria == VertexOrSite.VERTEX)
+                    ? edge.LeftVertex.Position
+                    : edge.LeftSite.Position;
+                Vector2 rightPoint = (criteria == VertexOrSite.VERTEX)
+                    ? edge.RightVertex.Position
+                    : edge.RightSite.Position;
+                if (leftPoint == Vertex.VERTEX_AT_INFINITY.Position ||
+                    rightPoint == Vertex.VERTEX_AT_INFINITY.Position) {
                     return new List<Edge>();
                 }
 
@@ -87,7 +89,7 @@ sealed class EdgeReorderer {
                     edgeOrientation_.Insert(0, Side.RIGHT);
                     newEdges.Insert(0, edge);
                     done[i] = true;
-                }else if (rightPoint == lastPoint) {
+                } else if (rightPoint == lastPoint) {
                     lastPoint = leftPoint;
                     edgeOrientation_.Add(Side.RIGHT);
                     newEdges.Add(edge);

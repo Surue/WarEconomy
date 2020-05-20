@@ -8,7 +8,7 @@ using Random = UnityEngine.Random;
 namespace Procedural {
 public class Voronoi {
     SiteList sites_;
-    Dictionary<Vector3, Site> sitesIndexedByLocation_;
+    Dictionary<Vector2, Site> sitesIndexedByLocation_;
     List<Triangle> triangles_;
     List<Edge> edges_;
 
@@ -20,9 +20,9 @@ public class Voronoi {
 
     Site fortunesAlgorithmBottomMostSite_;
 
-    public Voronoi(List<Vector3> points, List<uint> colors, Rect plotBounds) {
+    public Voronoi(List<Vector2> points, List<uint> colors, Rect plotBounds) {
         sites_ = new SiteList();
-        sitesIndexedByLocation_ = new Dictionary<Vector3, Site>();
+        sitesIndexedByLocation_ = new Dictionary<Vector2, Site>();
 
         AddSites(points, colors);
         plotBounds_ = plotBounds;
@@ -44,7 +44,7 @@ public class Voronoi {
             for (int i = 0; i < n; ++i) {
                 triangles_[i].Dispose();
             }
-            
+
             triangles_.Clear();
             triangles_ = null;
         }
@@ -54,7 +54,7 @@ public class Voronoi {
             for (int i = 0; i < n; ++i) {
                 edges_[i].Dispose();
             }
-            
+
             edges_.Clear();
             edges_ = null;
         }
@@ -62,35 +62,35 @@ public class Voronoi {
         sitesIndexedByLocation_ = null;
     }
 
-    void AddSites(List<Vector3> points, List<uint> colors) {
+    void AddSites(List<Vector2> points, List<uint> colors) {
         int length = points.Count;
         for (int i = 0; i < length; ++i) {
             AddSite(points[i], (colors != null) ? colors[i] : 0, i);
         }
     }
 
-    void AddSite(Vector3 pos, uint color, int index) {
+    void AddSite(Vector2 pos, uint color, int index) {
         if (sitesIndexedByLocation_.ContainsKey(pos)) {
             return;
         }
 
         float weight = Random.value * 100f;
-        Site site = Site.Create(pos, index, weight, color);
+        Site site = Site.Create(pos, (uint)index, weight, color);
         sites_.Add(site);
         sitesIndexedByLocation_[pos] = site;
     }
 
-    public List<Vector3> Region(Vector3 pos) {
+    public List<Vector2> Region(Vector2 pos) {
         Site site = sitesIndexedByLocation_[pos];
         if (site == null) {
-            return new List<Vector3>();
+            return new List<Vector2>();
         }
 
         return site.Region(plotBounds_);
     }
 
-    public List<Vector3> NeighborSitesForSite(Vector3 pos) {
-        List<Vector3> points = new List<Vector3>();
+    public List<Vector2> NeighborSitesForSite(Vector2 pos) {
+        List<Vector2> points = new List<Vector2>();
 
         Site site = sitesIndexedByLocation_[pos];
         if (site == null) {
@@ -111,11 +111,11 @@ public class Voronoi {
         return sites_.Circles();
     }
 
-    public List<Segment> VoronoiBouondaryForSite(Vector3 pos) {
+    public List<Segment> VoronoiBouondaryForSite(Vector2 pos) {
         return DelaunayHelper.VisibleLineSegments(DelaunayHelper.SelectEdgesForSitePoint(pos, edges_));
     }
 
-    public List<Segment> DelaunayLinesForSite(Vector3 pos) {
+    public List<Segment> DelaunayLinesForSite(Vector2 pos) {
         return DelaunayHelper.DelaunayLinesForEdges(DelaunayHelper.SelectEdgesForSitePoint(pos, edges_));
     }
 
@@ -132,18 +132,18 @@ public class Voronoi {
     }
 
     List<Edge> HullEdges() {
-        return edges_.FindAll(delegate(Edge edge) { return edge.IsPartOfConvexHull(); });
+        return edges_.FindAll(edge => edge.IsPartOfConvexHull());
     }
-    
-    public List<Vector3> HullPointsInOrder() {
+
+    public List<Vector2> HullPointsInOrder() {
         List<Edge> hullEdge = HullEdges();
-        
-        List<Vector3> points = new List<Vector3>();
+
+        List<Vector2> points = new List<Vector2>();
 
         if (hullEdge.Count == 0) {
             return points;
         }
-        
+
         EdgeReorderer reorderer = new EdgeReorderer(hullEdge, VertexOrSite.SITE);
         hullEdge = reorderer.Edges;
         List<Side> orientations = reorderer.EdgeOrientation;
@@ -167,7 +167,7 @@ public class Voronoi {
         return DelaunayHelper.Kruksal(segments, type);
     }
 
-    public List<List<Vector3>> Regions() {
+    public List<List<Vector2>> Regions() {
         return sites_.Regions(plotBounds_);
     }
 
@@ -175,28 +175,28 @@ public class Voronoi {
         return sites_.SiteColor();
     }
 
-    public Nullable<Vector3> NearestSitePoint(float x, float z) {
+    public Nullable<Vector2> NearestSitePoint(float x, float z) {
         return sites_.NearestSitePoint(x, z);
     }
 
-    public List<Vector3> SitePositions() {
+    public List<Vector2> SitePositions() {
         return sites_.SitePositions();
     }
 
     void FortunesAlgorithm() {
-        Site newSite, bottomSite, topSite, tmpSite;
+        Site newSite, bottomSite, topSite, tempSite;
         Vertex v, vertex;
-        Vector3 newIntStar = Vector3.zero;
+        Vector2 newIntStar = Vector2.zero;
         Side leftRight;
         Halfedge lbnd, rbnd, llbnd, rrbnd, bisector;
         Edge edge;
 
         Rect dataBounds = sites_.GetSiteBounds();
-        
-        int sqrtNSite = (int)(Mathf.Sqrt(sites_.Count + 4));
-        HalfedgePriorityQueue heap = new HalfedgePriorityQueue(dataBounds.y, dataBounds.height, sqrtNSite);
-        EdgeList edgeList = new EdgeList(dataBounds.x, dataBounds.width, sqrtNSite);
-        List<Halfedge> halfedges = new List<Halfedge>();
+
+        int sqrt_nsites = (int) (Mathf.Sqrt(sites_.Count + 4));
+        HalfedgePriorityQueue heap = new HalfedgePriorityQueue(dataBounds.y, dataBounds.height, sqrt_nsites);
+        EdgeList edgeList = new EdgeList(dataBounds.x, dataBounds.width, sqrt_nsites);
+        List<Halfedge> halfEdges = new List<Halfedge>();
         List<Vertex> vertices = new List<Vertex>();
 
         fortunesAlgorithmBottomMostSite_ = sites_.Next();
@@ -207,99 +207,97 @@ public class Voronoi {
                 newIntStar = heap.Min();
             }
 
-            if (newSite != null && (heap.Empty() || CompareByZThenX(newSite, newIntStar) < 0)) {
+            if (newSite != null && (heap.Empty() || CompareByYThenX(newSite, newIntStar) < 0)) {
                 lbnd = edgeList.EdgeListLeftNeighbor(newSite.Position);
-
                 rbnd = lbnd.edgeListRightNeighbor;
-
                 bottomSite = FortunesAlgorithmRightRegion(lbnd);
-
                 edge = Edge.CreateBisectingEdge(bottomSite, newSite);
-
                 edges_.Add(edge);
 
                 bisector = Halfedge.Create(edge, Side.LEFT);
-                halfedges.Add(bisector);
-
+                halfEdges.Add(bisector);
                 edgeList.Insert(lbnd, bisector);
 
+                // first half of Step 11:
                 if ((vertex = Vertex.Intersect(lbnd, bisector)) != null) {
                     vertices.Add(vertex);
                     heap.Remove(lbnd);
                     lbnd.vertex = vertex;
-                    lbnd.zStar = vertex.Z + newSite.Dist(vertex.Position);
+                    lbnd.yStar = vertex.Y + newSite.Dist(vertex.Position);
                     heap.Insert(lbnd);
                 }
 
                 lbnd = bisector;
                 bisector = Halfedge.Create(edge, Side.RIGHT);
-                halfedges.Add(bisector);
+                halfEdges.Add(bisector);
                 edgeList.Insert(lbnd, bisector);
 
                 if ((vertex = Vertex.Intersect(bisector, rbnd)) != null) {
                     vertices.Add(vertex);
                     bisector.vertex = vertex;
-                    bisector.zStar = vertex.Z + newSite.Dist(vertex.Position);
+                    bisector.yStar = vertex.Y + newSite.Dist(vertex.Position);
                     heap.Insert(bisector);
                 }
 
                 newSite = sites_.Next();
-            }else if (!heap.Empty()) {
+            } else if (heap.Empty() == false) {
                 lbnd = heap.ExtractMin();
                 llbnd = lbnd.edgeListLeftNeighbor;
                 rbnd = lbnd.edgeListRightNeighbor;
                 rrbnd = rbnd.edgeListRightNeighbor;
-
                 bottomSite = FortunesAlgorithmLeftRegion(lbnd);
-                topSite = FortunesAlgorithmLeftRegion(rbnd);
+                topSite = FortunesAlgorithmRightRegion(rbnd);
 
                 v = lbnd.vertex;
                 v.SetIndex();
-                lbnd.edge.SetVertex((Side)lbnd.leftRight, v);
+                lbnd.edge.SetVertex((Side) lbnd.leftRight, v);
                 rbnd.edge.SetVertex((Side) rbnd.leftRight, v);
                 edgeList.Remove(lbnd);
                 heap.Remove(rbnd);
                 edgeList.Remove(rbnd);
                 leftRight = Side.LEFT;
-                if (bottomSite.Z > topSite.Z) {
-                    tmpSite = bottomSite;
+                if (bottomSite.Y > topSite.Y) {
+                    tempSite = bottomSite;
                     bottomSite = topSite;
-                    topSite = tmpSite;
+                    topSite = tempSite;
                     leftRight = Side.RIGHT;
                 }
 
                 edge = Edge.CreateBisectingEdge(bottomSite, topSite);
                 edges_.Add(edge);
                 bisector = Halfedge.Create(edge, leftRight);
-                halfedges.Add(bisector);
+                halfEdges.Add(bisector);
                 edgeList.Insert(llbnd, bisector);
                 edge.SetVertex(SideHelper.Other(leftRight), v);
                 if ((vertex = Vertex.Intersect(llbnd, bisector)) != null) {
                     vertices.Add(vertex);
                     heap.Remove(llbnd);
                     llbnd.vertex = vertex;
-                    llbnd.zStar = vertex.Z + bottomSite.Dist(vertex.Position);
+                    llbnd.yStar = vertex.Y + bottomSite.Dist(vertex.Position);
                     heap.Insert(llbnd);
                 }
+
                 if ((vertex = Vertex.Intersect(bisector, rrbnd)) != null) {
                     vertices.Add(vertex);
                     bisector.vertex = vertex;
-                    bisector.zStar = vertex.Z + bottomSite.Dist(vertex.Position);
+                    bisector.yStar = vertex.Y + bottomSite.Dist(vertex.Position);
                     heap.Insert(bisector);
                 }
             } else {
                 break;
             }
         }
-        
+
+        // heap should be empty now
         heap.Dispose();
         edgeList.Dispose();
 
-        for (int i = 0; i < halfedges.Count; i++) {
-            Halfedge halfedge = halfedges[i];
-            halfedge.HardDispose();
+        for (int i = 0; i < halfEdges.Count; i++) {
+            Halfedge halfEdge = halfEdges[i];
+            halfEdge.HardDispose();
         }
-        halfedges.Clear();
+
+        halfEdges.Clear();
 
         for (int i = 0; i < edges_.Count; i++) {
             edge = edges_[i];
@@ -310,6 +308,7 @@ public class Voronoi {
             vertex = vertices[i];
             vertex.Dispose();
         }
+
         vertices.Clear();
     }
 
@@ -321,7 +320,7 @@ public class Voronoi {
 
         return edge.Site((Side) halfedge.leftRight);
     }
-    
+
     Site FortunesAlgorithmRightRegion(Halfedge halfedge) {
         Edge edge = halfedge.edge;
         if (edge == null) {
@@ -331,12 +330,12 @@ public class Voronoi {
         return edge.Site(SideHelper.Other((Side) halfedge.leftRight));
     }
 
-    public static int CompareByZThenX(Site s1, Site s2) {
-        if (s1.Z < s2.Z) {
+    public static int CompareByYThenX(Site s1, Site s2) {
+        if (s1.Y < s2.Y) {
             return -1;
         }
 
-        if (s1.Z > s2.Z) {
+        if (s1.Y > s2.Y) {
             return 1;
         }
 
@@ -350,13 +349,13 @@ public class Voronoi {
 
         return 0;
     }
-    
-    public static int CompareByZThenX(Site s1, Vector3 p1) {
-        if (s1.Z < p1.z) {
+
+    public static int CompareByYThenX(Site s1, Vector2 p1) {
+        if (s1.Y < p1.y) {
             return -1;
         }
 
-        if (s1.Z > p1.z) {
+        if (s1.Y > p1.y) {
             return 1;
         }
 

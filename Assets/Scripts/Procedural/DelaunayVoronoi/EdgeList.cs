@@ -21,9 +21,9 @@ internal sealed class EdgeList {
         
         hash_ = new Halfedge[hashSize_];
         
-        leftEnd_ = Halfedge.CreateDummy();
-        rightEnd_ = Halfedge.CreateDummy();
-
+        leftEnd_ = Halfedge.CreateDummy ();
+        rightEnd_ = Halfedge.CreateDummy ();
+        
         leftEnd_.edgeListLeftNeighbor = null;
         leftEnd_.edgeListRightNeighbor = rightEnd_;
         rightEnd_.edgeListLeftNeighbor = leftEnd_;
@@ -53,11 +53,12 @@ internal sealed class EdgeList {
         hash_ = null;
     }
 
-    public void Insert(Halfedge left, Halfedge newHalfedge) {
-        newHalfedge.edgeListLeftNeighbor = left;
-        newHalfedge.edgeListRightNeighbor = left.edgeListRightNeighbor;
-        left.edgeListRightNeighbor.edgeListLeftNeighbor = newHalfedge;
-        left.edgeListRightNeighbor = newHalfedge;
+    public void Insert(Halfedge lb, Halfedge newHalfedge) {
+        newHalfedge.edgeListLeftNeighbor = lb;
+        newHalfedge.edgeListRightNeighbor = lb.edgeListRightNeighbor;
+        
+        lb.edgeListRightNeighbor.edgeListLeftNeighbor = newHalfedge;
+        lb.edgeListRightNeighbor = newHalfedge;
     }
 
     public void Remove(Halfedge halfedge) {
@@ -69,48 +70,43 @@ internal sealed class EdgeList {
     }
 
     public Halfedge EdgeListLeftNeighbor(Vector3 pos) {
-        Halfedge halfedge;
-
-        int bucket = (int) ((pos.x - xMin_) / deltaX_ * hashSize_);
+        int i, bucket;
+        Halfedge halfEdge;
+		
+        /* Use hash table to get close to desired halfedge */
+        bucket = (int)((pos.x - xMin_) / deltaX_ * hashSize_);
         if (bucket < 0) {
             bucket = 0;
         }
-
-        if (bucket > hashSize_) {
+        if (bucket >= hashSize_) {
             bucket = hashSize_ - 1;
         }
-
-        halfedge = GetHash(bucket);
-
-        if (halfedge == null) {
-            for (int i = 1; true; i++) {
-                if ((halfedge = GetHash(bucket - i)) != null) {
+        halfEdge = GetHash (bucket);
+        if (halfEdge == null) {
+            for (i = 1; true; ++i) {
+                if ((halfEdge = GetHash (bucket - i)) != null)
                     break;
-                }
-
-                if ((halfedge = GetHash(bucket + i)) != null) {
+                if ((halfEdge = GetHash (bucket + i)) != null)
                     break;
-                }
             }
         }
-
-        if (halfedge == leftEnd_ || (halfedge != rightEnd_ && halfedge.IsLeftOf(pos))) {
+        /* Now search linear list of halfedges for the correct one */
+        if (halfEdge == leftEnd_ || (halfEdge != rightEnd_ && halfEdge.IsLeftOf (pos))) {
             do {
-                halfedge = halfedge.edgeListRightNeighbor;
-            } while (halfedge != rightEnd_ && halfedge.IsLeftOf(pos));
-
-            halfedge = halfedge.edgeListLeftNeighbor;
+                halfEdge = halfEdge.edgeListRightNeighbor;
+            } while (halfEdge != rightEnd_ && halfEdge.IsLeftOf(pos));
+            halfEdge = halfEdge.edgeListLeftNeighbor;
         } else {
             do {
-                halfedge = halfedge.edgeListLeftNeighbor;
-            } while (halfedge != leftEnd_ && !halfedge.IsLeftOf(pos));
+                halfEdge = halfEdge.edgeListLeftNeighbor;
+            } while (halfEdge != leftEnd_ && !halfEdge.IsLeftOf(pos));
         }
-
+		
+        /* Update hash table and reference counts */
         if (bucket > 0 && bucket < hashSize_ - 1) {
-            hash_[bucket] = halfedge;
+            hash_[bucket] = halfEdge;
         }
-
-        return halfedge;
+        return halfEdge;
     }
 
     Halfedge GetHash(int bucket) {

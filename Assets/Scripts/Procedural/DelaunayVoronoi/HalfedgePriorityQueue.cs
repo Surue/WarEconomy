@@ -7,12 +7,12 @@ sealed class HalfedgePriorityQueue {
     int minBucket_;
     int hashSize_;
 
-    float zMin_;
-    float deltaZ_;
+    float yMin_;
+    float deltaY_;
 
-    public HalfedgePriorityQueue(float zMin, float deltaZ, int sqrtNSites) {
-        zMin_ = zMin;
-        deltaZ_ = deltaZ;
+    public HalfedgePriorityQueue(float yMin, float deltaY, int sqrtNSites) {
+        yMin_ = yMin;
+        deltaY_ = deltaY;
         hashSize_ = 4 * sqrtNSites;
         Init();
     }
@@ -39,46 +39,39 @@ sealed class HalfedgePriorityQueue {
 
     public void Insert(Halfedge halfedge) {
         Halfedge previous, next;
-
-        int insertionBucket = Bucket(halfedge);
-
+        int insertionBucket = Bucket (halfedge);
         if (insertionBucket < minBucket_) {
             minBucket_ = insertionBucket;
         }
-
         previous = hash_[insertionBucket];
-
-        while ((next = previous.nextInPriorityQueue) != null &&
-               (halfedge.zStar > next.zStar || (halfedge.zStar == next.zStar && halfedge.vertex.X > next.vertex.X))) {
+        while ((next = previous.nextInPriorityQueue) != null
+               &&     (halfedge.yStar  > next.yStar || (halfedge.yStar == next.yStar && halfedge.vertex.X > next.vertex.X))) {
             previous = next;
         }
-
-        halfedge.nextInPriorityQueue = previous.nextInPriorityQueue;
+        halfedge.nextInPriorityQueue = previous.nextInPriorityQueue; 
         previous.nextInPriorityQueue = halfedge;
         ++count_;
     }
 
     public void Remove(Halfedge halfedge) {
         Halfedge previous;
-        int removalBucket = Bucket(halfedge);
-
+        int removalBucket = Bucket (halfedge);
+			
         if (halfedge.vertex != null) {
             previous = hash_[removalBucket];
-
             while (previous.nextInPriorityQueue != halfedge) {
                 previous = previous.nextInPriorityQueue;
             }
-
             previous.nextInPriorityQueue = halfedge.nextInPriorityQueue;
             count_--;
             halfedge.vertex = null;
             halfedge.nextInPriorityQueue = null;
-            halfedge.Dispose();
+            halfedge.Dispose ();
         }
     }
 
     int Bucket(Halfedge halfedge) {
-        int bucket = (int) ((halfedge.zStar - zMin_) / deltaZ_ * hashSize_);
+        int bucket = (int) ((halfedge.yStar - yMin_) / deltaY_ * hashSize_);
 
         if (bucket < 0) {
             bucket = 0;
@@ -105,10 +98,10 @@ sealed class HalfedgePriorityQueue {
         return count_ == 0;
     }
 
-    public Vector3 Min() {
+    public Vector2 Min() {
         AdjustMinBucket();
         Halfedge result = hash_[minBucket_].nextInPriorityQueue;
-        return new Vector3(result.vertex.X, result.zStar);
+        return new Vector2(result.vertex.X, result.yStar);
     }
 
     public Halfedge ExtractMin() {
