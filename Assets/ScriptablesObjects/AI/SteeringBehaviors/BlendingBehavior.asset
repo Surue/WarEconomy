@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39ead751f2361c84b9402e3874e3c351, type: 3}
+  m_Name: BlendingBehavior
+  m_EditorClassIdentifier: 
+  behaviors_:
+  - {fileID: 11400000, guid: 5a74f25c8e91f614098c99a0dc2a726a, type: 2}
+  - {fileID: 11400000, guid: b61e58b083507a443b7e252d4f7e03c0, type: 2}
+  - {fileID: 11400000, guid: 999cac6729616474c9173740b5194375, type: 2}
+  - {fileID: 11400000, guid: 2bd8dc63edbe78a43851772892f55e0f, type: 2}
+  weights_:
+  - 1
+  - 5
+  - 1
+  - 0.1
