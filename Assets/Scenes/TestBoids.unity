@@ -406,6 +406,9 @@ MonoBehaviour:
   densitySpawn_: 0.1
   neighborDetection_: 4.5
   steeringBehavior_: {fileID: 11400000, guid: 9d0fe15c4d7b18241b08367bd7c9bb02, type: 2}
+  useJobs_: 1
+  mesh_: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  material_: {fileID: 2100000, guid: 82617143233f5f84484c3af025c3189d, type: 2}
 --- !u!4 &1872353354
 Transform:
   m_ObjectHideFlags: 0
