@@ -402,7 +402,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefabAgent_: {fileID: 3234951356999665798, guid: e45345ed6f769b44f87aa376caa9aead,
     type: 3}
-  numberToSpawn_: 400
+  numberToSpawn_: 4000
   densitySpawn_: 0.1
   neighborDetection_: 4.5
   steeringBehavior_: {fileID: 11400000, guid: 9d0fe15c4d7b18241b08367bd7c9bb02, type: 2}

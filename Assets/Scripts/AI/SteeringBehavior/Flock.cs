@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Component;
+using Unity.Burst;
 using Unity.Collections;
 using UnityEngine;
 using Unity.Entities;
@@ -37,7 +39,8 @@ public class Flock : MonoBehaviour {
                 typeof(Rotation),
                 typeof(Boid),
                 typeof(Separation),
-                typeof(Cohesion)
+                typeof(Cohesion),
+                typeof(Constraint)
             );
 
             NativeArray<Entity> entityArray = new NativeArray<Entity>(numberToSpawn_, Allocator.Temp);
@@ -71,8 +74,7 @@ public class Flock : MonoBehaviour {
                 entityManager.SetComponentData(
                     entity,
                     new Boid {
-                        speed = 4.0f,
-                        nbNeighbors =  0
+                        speed = 4.0f
                     });
             }
 
@@ -130,81 +132,47 @@ public struct Cohesion : IComponentData {
     public float3 force;
 }
 
+public struct Constraint : IComponentData {
+    public float3 force;
+}
+
+public struct Alignment : IComponentData {
+    public float3 force;
+}
+
+[BurstCompile]
 public class BoidsSystem : JobComponentSystem {
 
-    struct FindNeighborsJob : IJobChunk {
-        [ReadOnly] public ArchetypeChunkComponentType<Translation> translationType;
-        public ArchetypeChunkComponentType<Boid> agentType;
-        [ReadOnly] public NativeArray<Translation> position;
-        
-        public NativeArray<float3> neighborsPosition;
-        
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex) {
-            NativeArray<Translation> chunkTranslation = chunk.GetNativeArray(translationType);
-            NativeArray<Boid> chunkAgents = chunk.GetNativeArray(agentType);
-            
-            for (int i = 0; i < chunk.Count; i++) {
-
-                int count = 0;
-
-                NativeArray<float3> poses = position.Reinterpret<float3>();
-                for (int index = 0; index < poses.Length; index++) {
-                    if (firstEntityIndex + i == index) continue;
-                    
-                    float3 pos = poses[index];
-                    float dist = Distance(chunkTranslation[i].Value, pos);
-
-                    if (dist > 4.5f) {
-                        continue;
-                    }
-
-                    neighborsPosition[firstEntityIndex + i + count] = pos;
-                    count++;
-                    if (count == 30) {
-                        break;
-                    }
-                }
-
-                chunkAgents[i] = new Boid {
-                    speed = chunkAgents[i].speed,
-                    nbNeighbors = count
-                };
-            }
-        }
-
-        float Distance(float3 pos0, float3 pos1) {
-            return Mathf.Sqrt(Mathf.Pow(pos1.x - pos0.x, 2) + Mathf.Pow(pos1.y - pos0.y, 2));
-        }
-    }
-    
+    [BurstCompile]
     struct SeparationJob : IJobChunk {
         [ReadOnly] public ArchetypeChunkComponentType<Translation> translationType;
-        [ReadOnly] public ArchetypeChunkComponentType<Boid> agentType;
-        [ReadOnly] public NativeArray<float3> neighborsPosition;
+        [ReadOnly] public NativeMultiHashMap<int, float3> quadrantHashMap;
         
         public ArchetypeChunkComponentType<Separation> separationType;
         
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex) {
             NativeArray<Separation> chunkSeparation = chunk.GetNativeArray(separationType);
             NativeArray<Translation> chunkTranslation = chunk.GetNativeArray(translationType);
-            NativeArray<Boid> chunkAgent = chunk.GetNativeArray(agentType);
-
-            float sqrDistance = 1.5f * 1.5f;
+            
+            NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
             
             for (int i = 0; i < chunk.Count; i++) {
                 float3 force = 0;
                 float3 position = chunkTranslation[i].Value;
 
                 int count = 0;
+
+                int hashMapKey = QuadrantSystem.GetPositionHashMapKey(position);
                 
-                for (int j = 0; j < chunkAgent[i].nbNeighbors; j++) {
-                    
-                    float3 otherPosition = neighborsPosition[firstEntityIndex + i + j];
-                    
-                    if (SqrDistance(otherPosition, position) > sqrDistance) continue;
-                    
-                    force += position - otherPosition;
-                    count++;
+                float3 otherPosition;
+                if (quadrantHashMap.TryGetFirstValue(hashMapKey, out otherPosition, out nativeMultiHashMapIterator)) {
+                    do {
+                        float distance = math.distance(otherPosition, position);
+                        if (distance < 1.5 && distance > 0.001f) {
+                            force += position - otherPosition;
+                            count++;
+                        }
+                    } while (quadrantHashMap.TryGetNextValue(out otherPosition, ref nativeMultiHashMapIterator));
                 }
 
                 if (count > 0) {
@@ -217,55 +185,147 @@ public class BoidsSystem : JobComponentSystem {
                 };
             }
         }
-        
-        float SqrDistance(float3 pos0, float3 pos1) {
-            return Mathf.Pow(pos1.x - pos0.x, 2) + Mathf.Pow(pos1.y - pos0.y, 2);
-        }
     }
     
-    struct CohesionJob : IJobChunk {
-        public ArchetypeChunkComponentType<Cohesion> cohesionType;
+//    [BurstCompile]
+//    struct AlignmentJob : IJobChunk {
+//        [ReadOnly] public ArchetypeChunkComponentType<Translation> translationType;
+//        [ReadOnly] public ArchetypeChunkComponentType<Boid> agentType;
+//        [ReadOnly] public NativeMultiHashMap<int, float3> quadrantHashMap;
+//        
+//        public ArchetypeChunkComponentType<Alignment> separationType;
+//        
+//        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex) {
+//            NativeArray<Alignment> chunkAlignment = chunk.GetNativeArray(separationType);
+//            NativeArray<Translation> chunkTranslation = chunk.GetNativeArray(translationType);
+//            NativeArray<Boid> chunkAgent = chunk.GetNativeArray(agentType);
+//            
+//
+//            float sqrDistance = 1.5f * 1.5f;
+//            NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
+//            
+//            for (int i = 0; i < chunk.Count; i++) {
+//                float3 desired = Vector3.zero;
+//                float3 force = Vector3.zero;
+//                float3 position = chunkTranslation[i].Value;
+//                
+//                int hashMapKey = QuadrantSystem.GetPositionHashMapKey(chunkTranslation[i].Value);
+//                float3 otherPosition = new float3(0, 0, 0);
+//                int count = 0;
+//                if (quadrantHashMap.TryGetFirstValue(hashMapKey, out otherPosition, out nativeMultiHashMapIterator)) {
+//                    do {
+//                        float distance = math.distance(position, otherPosition);
+//                        if (distance < 4.5f && distance > 0.001f) {
+//                            desired += rotations[neighbourId] * Vector3.forward;
+//                    
+//                            force += position - otherPosition;
+//                            count++;
+//                        }
+//                    } while (quadrantHashMap.TryGetNextValue(out otherPosition, ref nativeMultiHashMapIterator));
+//                }
+//
+//                if (count > 0)
+//                {
+//                    desired /= count;
+//                    force = desired - (chunkAgent[i].up);
+//                }
+//                
+//                chunkAlignment[i] = new Alignment
+//                {
+//                    force = force
+//                };
+//            }
+//        }
+//    }
+    
+    [BurstCompile]
+    struct ConstraintJob : IJobChunk {
         [ReadOnly] public ArchetypeChunkComponentType<Translation> translationType;
-        [ReadOnly] public ArchetypeChunkComponentType<Boid> agentType;
         
-        [ReadOnly] public  NativeArray<float3> neighborsPosition;
+        public ArchetypeChunkComponentType<Constraint> constraintType;
+        
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex) {
-            NativeArray<Cohesion> chunkCohesion = chunk.GetNativeArray(cohesionType);
+            NativeArray<Constraint> chunkConstraints = chunk.GetNativeArray(constraintType);
             NativeArray<Translation> chunkTranslation = chunk.GetNativeArray(translationType);
-            NativeArray<Boid> chunkAgent = chunk.GetNativeArray(agentType);
+
+            float radius = 500;
             
             for (int i = 0; i < chunk.Count; i++) {
-                float3 move = Vector3.zero;
-                
-                for (int j = 0; j < chunkAgent[i].nbNeighbors; j++) {
-                    move += neighborsPosition[firstEntityIndex + i + j];
-                }
+                float3 centerOffset = -chunkTranslation[i].Value;
 
-                if (chunkAgent[i].nbNeighbors > 0) {
-                    move /= chunkAgent[i].nbNeighbors;
+                float t = math.length(centerOffset) / radius;
 
-                    move -= chunkTranslation[i].Value;
-                    
-                    //Add smooth damping
+                float3 force = new float3(0, 0, 0);
+
+                if (t > 0.8f) {
+                    force = t * t * centerOffset;
                 }
                 
-                chunkCohesion[i] = new Cohesion
+                chunkConstraints[i] = new Constraint
                 {
-                    force = move
+                    force = force
                 };
             }
         }
     }
     
+    [BurstCompile]
+    struct CohesionJob : IJobChunk {
+        public ArchetypeChunkComponentType<Cohesion> cohesionType;
+        [ReadOnly] public ArchetypeChunkComponentType<Translation> translationType;
+        
+        [ReadOnly] public NativeMultiHashMap<int, float3> quadrantHashMap;
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex) {
+            NativeArray<Cohesion> chunkCohesion = chunk.GetNativeArray(cohesionType);
+            NativeArray<Translation> chunkTranslation = chunk.GetNativeArray(translationType);
+            
+            NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
+            
+            for (int i = 0; i < chunk.Count; i++) {
+                float3 force = Vector3.zero;
+                float3 position = chunkTranslation[i].Value;
+                
+                int hashMapKey = QuadrantSystem.GetPositionHashMapKey(chunkTranslation[i].Value);
+                float3 otherPosition = new float3(0, 0, 0);
+                int count = 0;
+                if (quadrantHashMap.TryGetFirstValue(hashMapKey, out otherPosition, out nativeMultiHashMapIterator)) {
+                    do {
+                        float distance = math.distance(position, otherPosition);
+                        if (distance < 4.5f && distance > 0.001f) {
+                            force += otherPosition;
+                            count++;
+                        }
+                    } while (quadrantHashMap.TryGetNextValue(out otherPosition, ref nativeMultiHashMapIterator));
+                }
+
+                if (count > 0) {
+                    force /= count;
+
+                    force -= chunkTranslation[i].Value;
+                    
+                    math.smoothstep(force, new float3(0, 0, 0), 0.5f);
+                }
+                
+                chunkCohesion[i] = new Cohesion
+                {
+                    force = force
+                };
+            }
+        }
+    }
+    
+    [BurstCompile]
     struct BoidsJob : IJobChunk {
         public float dt;
         [ReadOnly] public ArchetypeChunkComponentType<Separation> separationType;
         [ReadOnly] public ArchetypeChunkComponentType<Cohesion> cohesionType;
+        [ReadOnly] public ArchetypeChunkComponentType<Constraint> constraintType;
         public ArchetypeChunkComponentType<Boid> agentType;
         public ArchetypeChunkComponentType<Translation> translationType;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex) {
             NativeArray<Separation> chunkSeparation = chunk.GetNativeArray(separationType);
             NativeArray<Cohesion> chunkCohesion = chunk.GetNativeArray(cohesionType);
+            NativeArray<Constraint> chunkConstraint = chunk.GetNativeArray(constraintType);
             NativeArray<Translation> chunkTranslation = chunk.GetNativeArray(translationType);
             NativeArray<Boid> chunkAgent = chunk.GetNativeArray(agentType);
             
@@ -275,20 +335,28 @@ public class BoidsSystem : JobComponentSystem {
             const float cohesionWeight = 1;
             const float sqrCohesionWeight = cohesionWeight * cohesionWeight;
             
+            const float constraintWeight = 0.1f;
+            const float sqrConstraintWeight = constraintWeight * constraintWeight;
+            
             for (int i = 0; i < chunk.Count; i++) {
 
                 float3 separationForce = chunkSeparation[i].force;
 
-                if (SqrMagnitude(separationForce) > sqrSeparationWeight) {
-                    separationForce = separationForce / Magnitude(separationForce) * separationWeight;
+                if (math.lengthsq(separationForce) > sqrSeparationWeight) {
+                    separationForce = math.normalize(separationForce) * separationWeight;
                 }
                 
                 float3 cohesionForce = chunkCohesion[i].force;
-                if (SqrMagnitude(cohesionForce) > sqrCohesionWeight) {
-                    cohesionForce = cohesionForce / Magnitude(cohesionForce) * cohesionWeight;
+                if (math.lengthsq(cohesionForce) > sqrCohesionWeight) {
+                    cohesionForce = math.normalize(cohesionForce) * cohesionWeight;
                 }
                 
-                float3 newVelocity = cohesionForce + separationForce;
+                float3 constraintForce = chunkConstraint[i].force;
+                if (math.lengthsq(constraintForce) > sqrConstraintWeight) {
+                    constraintForce = math.normalize(constraintForce) * constraintWeight;
+                }
+                
+                float3 newVelocity = cohesionForce + separationForce + constraintForce;
 
 //                if (Magnitude(newVelocity) > chunkAgent[i].speed) {
 //                    newVelocity = (newVelocity / Magnitude(newVelocity)) * chunkAgent[i].speed;
@@ -304,14 +372,6 @@ public class BoidsSystem : JobComponentSystem {
                     Value = chunkTranslation[i].Value + (newVelocity * chunkAgent[i].speed * dt),
                 };
             }
-        }
-        
-        float SqrMagnitude(float3 v) {
-            return Mathf.Pow(v.x, 2) + Mathf.Pow(v.y, 2);
-        }
-
-        float Magnitude(float3 v) {
-            return Mathf.Sqrt(Mathf.Pow(v.x, 2) + Mathf.Pow(v.y, 2));
         }
     }
     
@@ -340,38 +400,37 @@ public class BoidsSystem : JobComponentSystem {
         ArchetypeChunkComponentType<Translation> translationChunk =  GetArchetypeChunkComponentType<Translation>();
         ArchetypeChunkComponentType<Boid> agentChunk = GetArchetypeChunkComponentType<Boid>();
         ArchetypeChunkComponentType<Cohesion> cohesionChunk = GetArchetypeChunkComponentType<Cohesion>();
+        ArchetypeChunkComponentType<Constraint> constraintChunk = GetArchetypeChunkComponentType<Constraint>();
 
-        NativeArray<Translation> positions = entityQuery_.ToComponentDataArrayAsync<Translation>(Allocator.TempJob, out inputDeps);
+        NativeMultiHashMap<int, float3> quadrantHasMap = QuadrantSystem.quadrantMultiHashMap;
 
-        //Get neighbors
-        FindNeighborsJob findNeighborsJob = new FindNeighborsJob() {
-            translationType = translationChunk,
-            agentType = agentChunk,
-            position = positions,
-            neighborsPosition = neighborsPosition_
-        };
-
-        JobHandle findNeighborsJobHandle = findNeighborsJob.Schedule(entityQuery_, inputDeps);
+        QuadrantSystem.jobHandle.Complete();
         
         //Separation
         SeparationJob separationJob = new SeparationJob {
             separationType = separationChunk,
             translationType = translationChunk,
-            neighborsPosition =  neighborsPosition_,
-            agentType = agentChunk
+            quadrantHashMap =  quadrantHasMap
         };
 
-        JobHandle separationJobHandle = separationJob.Schedule(entityQuery_, findNeighborsJobHandle);
+        JobHandle separationJobHandle = separationJob.Schedule(entityQuery_, inputDeps);
         
         //Cohesion
         CohesionJob cohesionJob = new CohesionJob {
             cohesionType = cohesionChunk,
             translationType = translationChunk,
-            neighborsPosition =  neighborsPosition_,
-            agentType = agentChunk
+            quadrantHashMap =  quadrantHasMap
         };
 
         JobHandle cohesionJobHandle = cohesionJob.Schedule(entityQuery_, separationJobHandle);
+        
+        //Constraint
+        ConstraintJob constraintJob = new ConstraintJob {
+            constraintType = constraintChunk,
+            translationType = translationChunk
+        };
+
+        JobHandle constraintJobHandle = constraintJob.Schedule(entityQuery_, cohesionJobHandle);
 
         //Boids
         BoidsJob boidsJob = new BoidsJob() {
@@ -379,12 +438,17 @@ public class BoidsSystem : JobComponentSystem {
             separationType = separationChunk,
             agentType = agentChunk,
             translationType = translationChunk,
+            constraintType = constraintChunk,
             dt = Time.DeltaTime
         };
-            
-        JobHandle boidsJobHandle = boidsJob.Schedule(entityQuery_, cohesionJobHandle);
+
+        JobHandle boidsJobHandle = boidsJob.Schedule(entityQuery_, constraintJobHandle);
         
-        return  positions.Dispose(boidsJobHandle);
+        separationJobHandle.Complete();
+        cohesionJobHandle.Complete();
+        
+        
+        return  boidsJobHandle;
     }
 }
    

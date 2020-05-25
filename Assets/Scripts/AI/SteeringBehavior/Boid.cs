@@ -23,7 +23,6 @@ namespace Component {
 
 public struct Boid : IComponentData {
     public float speed;
-    public int nbNeighbors;
     public float3 velocity;
 }
 }

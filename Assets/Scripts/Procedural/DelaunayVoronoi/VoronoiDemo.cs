@@ -14,6 +14,10 @@ public class VoronoiDemo : MonoBehaviour {
     List<Segment2D> spanningTree_;
     List<Segment2D> delaunayTriangulation_;
 
+    [SerializeField] bool showMst_ = true;
+    [SerializeField] bool showVoronoi_ = true;
+    [SerializeField] bool showDelaunay_ = true;
+
     void Awake() {
         Demo();
     }
@@ -49,7 +53,7 @@ public class VoronoiDemo : MonoBehaviour {
             }
         }
 
-        if (edges_ != null) {
+        if (edges_ != null && showVoronoi_) {
             Gizmos.color = Color.white;
             for (int i = 0; i < edges_.Count; i++) {
                 Vector2 left = (Vector2)edges_[i].p0;
@@ -60,7 +64,7 @@ public class VoronoiDemo : MonoBehaviour {
         }
         
         Gizmos.color = Color.magenta;
-        if (delaunayTriangulation_ != null) {
+        if (delaunayTriangulation_ != null && showDelaunay_) {
             for (int i = 0; i < delaunayTriangulation_.Count; i++) {
                 Vector2 left = (Vector2)delaunayTriangulation_[i].p0;
                 Vector2 right = (Vector2)delaunayTriangulation_[i].p1;
@@ -69,7 +73,7 @@ public class VoronoiDemo : MonoBehaviour {
             }
         }
 
-        if (spanningTree_ != null) {
+        if (spanningTree_ != null && showMst_) {
             Gizmos.color = Color.green;
             for (int i = 0; i < spanningTree_.Count; i++) {
                 Segment2D segment2D = spanningTree_[i];
