@@ -3,41 +3,31 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace AI {
 
 [Serializable]
-public struct EditorLink {
+public struct EditorNodeLink {
      [SerializeField] public WayPoint wayPoint;
      public float weight;
      public float distance;
  }
 
-[Serializable]
-public struct Link {
-    public int wayPointIndex;
-    public float weight;
-    public float distance;
-}
 public class WayPoint : MonoBehaviour {
     
-    [SerializeField] List<EditorLink> neighbors_;
-    [SerializeField] List<Link> links_;
+    [SerializeField] List<EditorNodeLink> neighbors_;
     const int NULL_INDEX = -1;
     [SerializeField] int index = NULL_INDEX;
 
-    public List<Link> Links => links_;
+    public List<EditorNodeLink> Links => neighbors_;
 
     public int Index => index;
-
-    void Start() {
-        ComputeLinks();
-    }
 
     void OnValidate() {
         if(neighbors_ == null) return; 
         for (int i = 0; i < neighbors_.Count; i++) {
-            EditorLink neighbor = neighbors_[i];
+            EditorNodeLink neighbor = neighbors_[i];
             neighbor.distance = (Vector3.Distance(transform.position, neighbor.wayPoint.transform.position));
 
             neighbors_[i] = neighbor;
@@ -50,9 +40,9 @@ public class WayPoint : MonoBehaviour {
 
     public bool IsNeighbor(WayPoint wayPoint) {
         if (neighbors_ == null) {
-            neighbors_ = new List<EditorLink>();
+            neighbors_ = new List<EditorNodeLink>();
         }
-        foreach (EditorLink editorLink in neighbors_) {
+        foreach (EditorNodeLink editorLink in neighbors_) {
             if (editorLink.wayPoint == wayPoint) {
                 return true;
             }
@@ -62,7 +52,7 @@ public class WayPoint : MonoBehaviour {
     }
 
     public void AddNeighbor(WayPoint wayPoint, float weight, float distance) {
-        neighbors_.Add((new EditorLink{wayPoint = wayPoint, weight =  weight, distance = distance}));
+        neighbors_.Add((new EditorNodeLink{wayPoint = wayPoint, weight =  weight, distance = distance}));
     }
 
     public void Reset(int newIndex, PathFinder pathFinder) {
@@ -71,26 +61,12 @@ public class WayPoint : MonoBehaviour {
         index = newIndex;
     }
 
-    public void ComputeLinks() {
-        links_ = new List<Link>(neighbors_.Count);
-        
-        for (int i = 0; i < neighbors_.Count; i++) {
-            EditorLink neighbor = neighbors_[i];
-
-            Link link;
-            link.distance = neighbor.distance;
-            link.weight = neighbor.weight;
-            link.wayPointIndex = neighbor.wayPoint.Index;
-            
-            links_.Add(link);
-        }
-    }
-
 #if UNITY_EDITOR
+    bool isDragging = false;
+    
     void OnDrawGizmos() {
         Gizmos.color = Color.cyan;
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.5f);
-
         
         Handles.DrawWireDisc(transform.position, Vector3.up, 0.1f);
         
@@ -98,7 +74,7 @@ public class WayPoint : MonoBehaviour {
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 0.75f);
         Vector3 position = transform.position;
         
-        foreach (EditorLink neighbor in neighbors_) {
+        foreach (EditorNodeLink neighbor in neighbors_) {
             Vector3 neighborPos = neighbor.wayPoint.transform.position;
             Vector3 dir = (position - neighborPos).normalized;
 
@@ -128,7 +104,7 @@ public class WayPoint : MonoBehaviour {
         Handles.color = new Color(0.0f, 1.0f, 1.0f, 1f);
         Vector3 position = transform.position;
         
-        foreach (EditorLink neighbor in neighbors_) {
+        foreach (EditorNodeLink neighbor in neighbors_) {
             Vector3 neighborPos = neighbor.wayPoint.transform.position;
             Handles.Label((position + neighborPos) / 2.0f, neighbor.weight + " + " + neighbor.distance.ToString("0.00"));
             Vector3 dir = (position - neighborPos).normalized;

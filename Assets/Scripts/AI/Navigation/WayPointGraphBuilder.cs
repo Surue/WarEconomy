@@ -45,10 +45,6 @@ public class WayPointGraphBuilder : MonoBehaviour {
             
             mainWayPoints_.Add(wayPoints[i]);
         }
-        
-        for (int i = 0; i < wayPoints.Count; i++) {
-            wayPoints[i].ComputeLinks();
-        }
 
         //Generate sub point
         for (int x = 0; x < mapSize_.x / (radiusBetweenSubWayPoint_ * 2); x++) {
@@ -97,10 +93,6 @@ public class WayPointGraphBuilder : MonoBehaviour {
                     }
                 }
             }
-        }
-
-        for (int i = 0; i < subWayPoints_.Count; i++) {
-            subWayPoints_[i].ComputeLinks();
         }
     }
 

@@ -83,44 +83,44 @@ public class PathFinder : MonoBehaviour {
 
         Vector3 endPosition = wayPoints_[endWayPointIndex].transform.position;
         while (openList.Count > 0) {
-            //Sort by priority
-            float smallestCost = Mathf.Infinity;
-            int currentNodeIndex = 0;
-            foreach (int index in openList) {
-                if (totalCost[index] > smallestCost) continue;
-                
-                smallestCost = totalCost[index];
-                currentNodeIndex = index;
-            }
-            
-            //Get the first one
-            WayPoint currentWayPoint = wayPoints_[currentNodeIndex];
-            openList.Remove(currentNodeIndex);
-            
-            closedList.Add(currentNodeIndex);
-            
-            //Get all neighbors
-            for (int i = 0; i < currentWayPoint.Links.Count; i++) {
-                int indexNeighbor = currentWayPoint.Links[i].wayPointIndex;
-
-                float newCost = totalCost[currentNodeIndex] + (currentWayPoint.Links[i].distance * currentWayPoint.Links[i].weight) +
-                                Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition) * 5f;
-                
-                if(closedList.Contains(indexNeighbor)) continue;
-
-                if (totalCost[indexNeighbor] > newCost || totalCost[indexNeighbor] == 0) {
-                    cameFrom[indexNeighbor] = currentNodeIndex;
-                    totalCost[indexNeighbor] = newCost;
-
-                    if (!openList.Contains(indexNeighbor)) {
-                        openList.Add(indexNeighbor);
-                    }
-                }
-            }
-
-            if (currentNodeIndex == endWayPointIndex) {
-                break;
-            }
+//            //Sort by priority
+//            float smallestCost = Mathf.Infinity;
+//            int currentNodeIndex = 0;
+//            foreach (int index in openList) {
+//                if (totalCost[index] > smallestCost) continue;
+//                
+//                smallestCost = totalCost[index];
+//                currentNodeIndex = index;
+//            }
+//            
+//            //Get the first one
+//            WayPoint currentWayPoint = wayPoints_[currentNodeIndex];
+//            openList.Remove(currentNodeIndex);
+//            
+//            closedList.Add(currentNodeIndex);
+//            
+//            //Get all neighbors
+//            for (int i = 0; i < currentWayPoint.Links.Count; i++) {
+//                int indexNeighbor = currentWayPoint.Links[i].wayPointIndex;
+//
+//                float newCost = totalCost[currentNodeIndex] + (currentWayPoint.Links[i].distance * currentWayPoint.Links[i].weight) +
+//                                Vector3.Distance(wayPoints_[indexNeighbor].transform.position, endPosition) * 5f;
+//                
+//                if(closedList.Contains(indexNeighbor)) continue;
+//
+//                if (totalCost[indexNeighbor] > newCost || totalCost[indexNeighbor] == 0) {
+//                    cameFrom[indexNeighbor] = currentNodeIndex;
+//                    totalCost[indexNeighbor] = newCost;
+//
+//                    if (!openList.Contains(indexNeighbor)) {
+//                        openList.Add(indexNeighbor);
+//                    }
+//                }
+//            }
+//
+//            if (currentNodeIndex == endWayPointIndex) {
+//                break;
+//            }
         }
 
         //Build path with WayPoint
