@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
 using Geometry;
 using Procedural;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -14,9 +17,9 @@ public class VoronoiDemo : MonoBehaviour {
     List<Segment2D> spanningTree_;
     List<Segment2D> delaunayTriangulation_;
 
-    [SerializeField] bool showMst_ = true;
-    [SerializeField] bool showVoronoi_ = true;
-    [SerializeField] bool showDelaunay_ = true;
+    bool showMst_ = true;
+    bool showVoronoi_ = true;
+    bool showDelaunay_ = true;
 
     void Awake() {
         Demo();
@@ -91,4 +94,73 @@ public class VoronoiDemo : MonoBehaviour {
         Gizmos.DrawLine(new Vector2(mapWidth_, 0), new Vector2(mapWidth_, mapHeight_) );
         Gizmos.DrawLine(new Vector2(0, mapHeight_), new Vector2(mapWidth_, mapHeight_) );
     }
+
+    public bool IsMstVisible() {
+        return showMst_;
+    }
+
+    public void SetMstVisibility(bool isVisible) {
+        showMst_ = isVisible;
+    }
+    
+    public bool IsVoronoiVisible() {
+        return showVoronoi_;
+    }
+
+    public void SetVoronoiVisibility(bool isVisible) {
+        showVoronoi_ = isVisible;
+    }
+    
+    public bool IsDelaunayVisible() {
+        return showDelaunay_;
+    }
+
+    public void SetDelaunayVisibility(bool isVisible) {
+        showDelaunay_ = isVisible;
+    }
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(VoronoiDemo))]
+class VoronoiDemoEditor : Editor {
+    public override void OnInspectorGUI() {
+        DrawDefaultInspector(); //Default Inspector
+        
+        VoronoiDemo instance = (VoronoiDemo)target; // Get object edited
+
+        if (instance.IsDelaunayVisible()) {
+            if (GUILayout.Button("Hide triangulation")) { // Button to show delaunay
+                instance.SetDelaunayVisibility(false);
+            }
+        } else {
+            if (GUILayout.Button("Show triangulation")) { // Button to hide delaunay
+                instance.SetDelaunayVisibility(true);
+            }
+        }
+        
+        /*
+         * Do the same for Voronoi and MST
+         */
+
+        if (instance.IsVoronoiVisible()) {
+            if (GUILayout.Button("Hide voronoi graph")) {
+                instance.SetVoronoiVisibility(false);
+            }
+        } else {
+            if (GUILayout.Button("Show voronoi graph")) {
+                instance.SetVoronoiVisibility(true);
+            }
+        }
+        
+        if (instance.IsMstVisible()) {
+            if (GUILayout.Button("Hide minimium spanning tree")) {
+                instance.SetMstVisibility(false);
+            }
+        } else {
+            if (GUILayout.Button("Show minimum spanning tree")) {
+                instance.SetMstVisibility(true);
+            }
+        }
+    }
+}
+#endif
